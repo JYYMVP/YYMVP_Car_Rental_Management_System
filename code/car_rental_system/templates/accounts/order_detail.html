@@ -1,0 +1,276 @@
+{% extends "base_user.html" %}
+{% load static %}
+
+{% block title %}订单详情 - 租车管理系统{% endblock %}
+
+{% block content %}
+<div class="profile-fullscreen">
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+        <div>
+            <h1 class="mb-1">
+                <i class="fas fa-file-alt me-2"></i>订单 #{{ rental.id }}
+            </h1>
+            <p class="text-muted mb-0">
+                创建时间：{{ rental.created_at|date:"Y-m-d H:i" }}
+            </p>
+        </div>
+        <div class="d-flex flex-wrap gap-2">
+            <a href="{% url 'accounts:my_orders' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-2"></i>返回订单列表
+            </a>
+            {% if can_pay %}
+            <a href="{% url 'accounts:payment' rental.id %}" class="btn btn-success">
+                <i class="fas fa-yen-sign me-2"></i>去支付
+            </a>
+            {% endif %}
+            {% if can_review %}
+            <a href="{% url 'accounts:order_review' rental.id %}" class="btn btn-primary">
+                <i class="fas fa-star me-2"></i>撰写评价
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <h6 class="text-muted">订单状态</h6>
+                    <div class="d-flex align-items-center">
+                        {% if rental.status == 'PENDING' %}
+                            <span class="badge bg-warning text-dark">预订中</span>
+                        {% elif rental.status == 'ONGOING' %}
+                            <span class="badge bg-primary">进行中</span>
+                        {% elif rental.status == 'COMPLETED' %}
+                            <span class="badge bg-success">已完成</span>
+                        {% elif rental.status == 'CANCELLED' %}
+                            <span class="badge bg-secondary">已取消</span>
+                        {% endif %}
+                    </div>
+                    {% if rental.notes %}
+                        <p class="text-muted small mt-3 mb-0">
+                            <i class="fas fa-sticky-note me-1"></i>{{ rental.notes }}
+                        </p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <h6 class="text-muted">租赁时间</h6>
+                    <p class="mb-1 fw-semibold">
+                        <i class="fas fa-calendar-day me-2 text-primary"></i>{{ rental.start_date|date:"Y-m-d" }}
+                    </p>
+                    <p class="mb-1 fw-semibold">
+                        <i class="fas fa-calendar-check me-2 text-success"></i>{{ rental.end_date|date:"Y-m-d" }}
+                    </p>
+                    {% if rental.actual_return_date %}
+                        <p class="mb-1 text-muted">
+                            实际还车：{{ rental.actual_return_date|date:"Y-m-d" }}
+                        </p>
+                    {% endif %}
+                    <p class="text-muted mb-0">共 {{ rental.rental_days }} 天</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <h6 class="text-muted">车辆信息</h6>
+                    <p class="mb-1 fw-semibold">{{ rental.vehicle.brand }} {{ rental.vehicle.model }}</p>
+                    <p class="mb-1 text-muted">
+                        <i class="fas fa-car-side me-2"></i>车牌：{{ rental.vehicle.license_plate }}
+                    </p>
+                    <p class="mb-1 text-muted">
+                        <i class="fas fa-tag me-2"></i>类型：{{ rental.vehicle.vehicle_type }}
+                    </p>
+                    <p class="mb-0 text-muted">
+                        <i class="fas fa-palette me-2"></i>颜色：{{ rental.vehicle.color|default:"-" }}
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow mb-4">
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <div class="border rounded-3 p-3 h-100">
+                        <p class="text-muted mb-1">应付总额（含押金）</p>
+                        <h3 class="mb-0 text-primary">¥{{ order_total_amount|floatformat:2 }}</h3>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="border rounded-3 p-3 h-100">
+                        <p class="text-muted mb-1">已支付金额</p>
+                        <h3 class="mb-0 text-success">¥{{ amount_paid|floatformat:2 }}</h3>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="border rounded-3 p-3 h-100">
+                        <p class="text-muted mb-1">已退款金额</p>
+                        <h3 class="mb-0 text-secondary">¥{{ refunded_amount|floatformat:2 }}</h3>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="border rounded-3 p-3 h-100">
+                        <p class="text-muted mb-1">待支付金额</p>
+                        <h3 class="mb-0 text-warning">¥{{ remaining_amount|floatformat:2 }}</h3>
+                    </div>
+                </div>
+            </div>
+            <p class="text-muted small mb-0 mt-3">
+                净支付金额：¥{{ net_paid|floatformat:2 }}（已支付 - 已退款）
+            </p>
+        </div>
+    </div>
+
+    <div class="card shadow mb-4">
+        <div class="card-header bg-light">
+            <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>费用构成</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-borderless mb-0">
+                    <tbody>
+                        <tr>
+                            <td>基础租金（{{ rental.rental_days }} 天）</td>
+                            <td class="text-end">¥{{ base_amount|floatformat:2 }}</td>
+                        </tr>
+                        <tr>
+                            <td>押金</td>
+                            <td class="text-end">¥{{ deposit_amount|floatformat:2 }}</td>
+                        </tr>
+                        {% if has_cross_location_fee %}
+                        <tr>
+                            <td>异地还车费用</td>
+                            <td class="text-end">¥{{ cross_location_fee|floatformat:2 }}</td>
+                        </tr>
+                        {% endif %}
+                        <tr class="border-top">
+                            <td><strong>应付总额（含押金）</strong></td>
+                            <td class="text-end"><strong>¥{{ order_total_amount|floatformat:2 }}</strong></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow mb-4">
+        <div class="card-header bg-light d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="fas fa-receipt me-2"></i>支付记录</h5>
+            {% if can_pay %}
+            <a href="{% url 'accounts:payment' rental.id %}" class="btn btn-sm btn-outline-primary">
+                <i class="fas fa-plus me-1"></i>新增支付
+            </a>
+            {% endif %}
+        </div>
+        <div class="card-body p-0">
+            {% if payments %}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>支付时间</th>
+                                        <th>类型</th>
+                                <th>金额</th>
+                                <th>方式</th>
+                                <th>状态</th>
+                                        <th>备注</th>
+                                <th>交易号</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for payment in payments %}
+                            <tr>
+                                <td>{{ payment.paid_at|date:"Y-m-d H:i"|default:"-" }}</td>
+                                        <td>{{ payment.get_transaction_type_display }}</td>
+                                        <td>
+                                            {% if payment.transaction_type == 'REFUND' %}
+                                                <span class="text-secondary">-¥{{ payment.amount|floatformat:2 }}</span>
+                                            {% else %}
+                                                <span class="text-success">¥{{ payment.amount|floatformat:2 }}</span>
+                                            {% endif %}
+                                        </td>
+                                <td>{{ payment.get_payment_method_display }}</td>
+                                <td>
+                                    {% if payment.status == 'PAID' %}
+                                        <span class="badge bg-success">已支付</span>
+                                    {% elif payment.status == 'PENDING' %}
+                                        <span class="badge bg-warning text-dark">待支付</span>
+                                    {% elif payment.status == 'FAILED' %}
+                                        <span class="badge bg-danger">支付失败</span>
+                                    {% elif payment.status == 'REFUNDED' %}
+                                        <span class="badge bg-secondary">已退款</span>
+                                    {% endif %}
+                                </td>
+                                        <td>{{ payment.description|default:"-" }}</td>
+                                <td>{{ payment.transaction_id|default:"-" }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="p-4 text-center text-muted">
+                    暂无支付记录
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="card shadow mb-4">
+        <div class="card-header bg-light d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="fas fa-star me-2"></i>订单评价</h5>
+            {% if can_review %}
+            <a href="{% url 'accounts:order_review' rental.id %}" class="btn btn-sm btn-primary">
+                <i class="fas fa-pen me-1"></i>去评价
+            </a>
+            {% endif %}
+        </div>
+        <div class="card-body">
+            {% if review %}
+                <div class="d-flex align-items-center mb-2">
+                    {% for i in "12345"|make_list %}
+                        {% if forloop.counter <= review.rating %}
+                            <i class="fas fa-star text-warning me-1"></i>
+                        {% else %}
+                            <i class="far fa-star text-warning me-1"></i>
+                        {% endif %}
+                    {% endfor %}
+                    <span class="ms-2 text-muted">评分：{{ review.rating }} / 5</span>
+                </div>
+                <p class="mb-1">{{ review.comment|default:"用户未填写评价内容" }}</p>
+                <small class="text-muted">评价时间：{{ review.created_at|date:"Y-m-d H:i" }}</small>
+            {% else %}
+                {% if can_review %}
+                    <p class="text-muted mb-0">订单已完成，快去分享您的使用体验吧！</p>
+                {% else %}
+                    <p class="text-muted mb-0">暂无评价。</p>
+                {% endif %}
+            {% endif %}
+        </div>
+    </div>
+
+    {% if can_cancel %}
+    <div class="card shadow">
+        <div class="card-body d-flex flex-wrap justify-content-between align-items-center gap-2">
+            <div>
+                <h5 class="mb-1 text-danger"><i class="fas fa-exclamation-triangle me-2"></i>订单取消</h5>
+                <p class="mb-0 text-muted">订单尚未确认，您可以在此取消订单。</p>
+            </div>
+            <form method="post" action="{% url 'accounts:order_cancel' rental.id %}" onsubmit="return confirm('确定要取消该订单吗？');">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-outline-danger">
+                    <i class="fas fa-times me-2"></i>取消订单
+                </button>
+            </form>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+

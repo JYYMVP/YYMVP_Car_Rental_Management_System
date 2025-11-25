@@ -1,0 +1,243 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}租赁订单列表 - 租车管理系统{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1><i class="bi bi-receipt"></i> 租赁订单列表</h1>
+    <a href="{% url 'rentals:rental_create' %}" class="btn btn-primary">
+        <i class="bi bi-plus-circle"></i> 创建订单
+    </a>
+</div>
+
+<!-- 搜索和筛选 -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-4">
+            <div class="col-lg-3 col-md-4">
+                <label for="search" class="form-label">搜索</label>
+                <input type="text" class="form-control" id="search" name="search" value="{{ search_query }}" placeholder="搜索订单号或客户姓名">
+            </div>
+            <div class="col-lg-2 col-md-3">
+                <label for="status" class="form-label">订单状态</label>
+                <select class="form-select" id="status" name="status">
+                    <option value="">全部状态</option>
+                    <option value="PENDING" {% if status_filter == 'PENDING' %}selected{% endif %}>预订中</option>
+                    <option value="ONGOING" {% if status_filter == 'ONGOING' %}selected{% endif %}>进行中</option>
+                    <option value="COMPLETED" {% if status_filter == 'COMPLETED' %}selected{% endif %}>已完成</option>
+                    <option value="CANCELLED" {% if status_filter == 'CANCELLED' %}selected{% endif %}>已取消</option>
+                </select>
+            </div>
+            <div class="col-lg-2 col-md-3">
+                <label for="customer" class="form-label">客户</label>
+                <select class="form-select" id="customer" name="customer">
+                    <option value="">全部客户</option>
+                    {% for customer in customers %}
+                        <option value="{{ customer.id }}" {% if customer_filter == customer.id|stringformat:"s" %}selected{% endif %}>
+                            {{ customer.name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-lg-2 col-md-3">
+                <label for="vehicle" class="form-label">车辆</label>
+                <select class="form-select" id="vehicle" name="vehicle">
+                    <option value="">全部车辆</option>
+                    {% for vehicle in vehicles %}
+                        <option value="{{ vehicle.id }}" {% if vehicle_filter == vehicle.id|stringformat:"s" %}selected{% endif %}>
+                            {{ vehicle.license_plate }} - {{ vehicle.brand }} {{ vehicle.model }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-lg-3 col-md-2">
+                <label class="form-label">&nbsp;</label>
+                <div class="d-flex flex-column gap-2">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-search"></i> 搜索
+                    </button>
+                    <a href="{% url 'rentals:rental_list' %}" class="btn btn-secondary">
+                        <i class="bi bi-arrow-clockwise"></i> 重置
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- 订单列表 -->
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0"><i class="bi bi-table"></i> 订单列表</h5>
+        <div class="text-muted small">
+            共 {{ page_obj.paginator.count }} 条记录
+            {% if page_obj.paginator.num_pages > 1 %}
+                | 第 {{ page_obj.number }} / {{ page_obj.paginator.num_pages }} 页
+            {% endif %}
+        </div>
+    </div>
+    <div class="card-body p-0">
+        {% if page_obj.object_list %}
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>订单信息</th>
+                            <th>客户信息</th>
+                            <th>车辆信息</th>
+                            <th>租赁时间</th>
+                            <th>金额</th>
+                            <th>状态</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for rental in page_obj.object_list %}
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <div class="me-3">
+                                            <i class="bi bi-receipt text-primary" style="font-size: 1.5rem;"></i>
+                                        </div>
+                                        <div>
+                                            <h6 class="mb-1">#{{ rental.id }}</h6>
+                                            <small class="text-muted">{{ rental.created_at|date:"Y-m-d H:i" }}</small>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div>
+                                        <h6 class="mb-1">{{ rental.customer.name }}</h6>
+                                        <small class="text-muted"><i class="bi bi-telephone"></i> {{ rental.customer.phone }}</small>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div>
+                                        <strong>{{ rental.vehicle.brand }} {{ rental.vehicle.model }}</strong>
+                                        <br>
+                                        <small class="text-muted"><i class="bi bi-credit-card"></i> {{ rental.vehicle.license_plate }}</small>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div>
+                                        <small>
+                                            {{ rental.start_date|date:"Y-m-d" }}
+                                            <i class="bi bi-arrow-right mx-1"></i>
+                                            {{ rental.end_date|date:"Y-m-d" }}
+                                        </small>
+                                        <br>
+                                        <span class="badge bg-secondary">{{ rental.rental_days }}天</span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="text-success fw-bold">¥{{ rental.total_amount|floatformat:2 }}</span>
+                                </td>
+                                <td>
+                                    {% if rental.status == 'PENDING' %}
+                                        <span class="badge bg-info">
+                                            <i class="bi bi-clock"></i> 预订中
+                                        </span>
+                                    {% elif rental.status == 'ONGOING' %}
+                                        <span class="badge bg-success">
+                                            <i class="bi bi-play-circle"></i> 进行中
+                                        </span>
+                                    {% elif rental.status == 'COMPLETED' %}
+                                        <span class="badge bg-secondary">
+                                            <i class="bi bi-check-circle"></i> 已完成
+                                        </span>
+                                    {% elif rental.status == 'CANCELLED' %}
+                                        <span class="badge bg-danger">
+                                            <i class="bi bi-x-circle"></i> 已取消
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">{{ rental.get_status_display }}</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <a href="{% url 'rentals:rental_detail' rental.id %}" class="btn btn-outline-primary" title="查看详情">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                        {% if rental.status != 'COMPLETED' and rental.status != 'CANCELLED' %}
+                                            <a href="{% url 'rentals:rental_update' rental.id %}" class="btn btn-outline-secondary" title="编辑">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                        {% endif %}
+                                        {% if rental.status == 'ONGOING' %}
+                                            <a href="{% url 'rentals:rental_return' rental.id %}" class="btn btn-outline-success" title="归还">
+                                                <i class="bi bi-arrow-return-left"></i>
+                                            </a>
+                                        {% endif %}
+                                        {% if rental.status == 'PENDING' %}
+                                            <a href="{% url 'rentals:rental_cancel' rental.id %}" class="btn btn-outline-danger" title="取消">
+                                                <i class="bi bi-x-circle"></i>
+                                            </a>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="text-center py-5">
+                <i class="bi bi-receipt text-muted" style="font-size: 3rem;"></i>
+                <h5 class="text-muted mt-3">暂无订单记录</h5>
+                <p class="text-muted">请调整搜索条件或创建新的租赁订单</p>
+                <a href="{% url 'rentals:rental_create' %}" class="btn btn-primary">
+                    <i class="bi bi-plus-circle"></i> 创建订单
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- 分页导航 -->
+{% if page_obj.paginator.num_pages > 1 %}
+<nav aria-label="订单分页" class="mt-4">
+    <ul class="pagination justify-content-center">
+        {% if page_obj.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?page=1{% if status_filter %}&status={{ status_filter }}{% endif %}{% if customer_filter %}&customer={{ customer_filter }}{% endif %}{% if vehicle_filter %}&vehicle={{ vehicle_filter }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}">
+                    <i class="bi bi-chevron-double-left"></i> 首页
+                </a>
+            </li>
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if customer_filter %}&customer={{ customer_filter }}{% endif %}{% if vehicle_filter %}&vehicle={{ vehicle_filter }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}">
+                    <i class="bi bi-chevron-left"></i> 上一页
+                </a>
+            </li>
+        {% endif %}
+
+        {% for num in page_obj.paginator.page_range %}
+            {% if page_obj.number == num %}
+                <li class="page-item active">
+                    <span class="page-link">{{ num }}</span>
+                </li>
+            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ num }}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if customer_filter %}&customer={{ customer_filter }}{% endif %}{% if vehicle_filter %}&vehicle={{ vehicle_filter }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}">
+                        {{ num }}
+                    </a>
+                </li>
+            {% endif %}
+        {% endfor %}
+
+        {% if page_obj.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if customer_filter %}&customer={{ customer_filter }}{% endif %}{% if vehicle_filter %}&vehicle={{ vehicle_filter }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}">
+                    下一页 <i class="bi bi-chevron-right"></i>
+                </a>
+            </li>
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if customer_filter %}&customer={{ customer_filter }}{% endif %}{% if vehicle_filter %}&vehicle={{ vehicle_filter }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}">
+                    末页 <i class="bi bi-chevron-double-right"></i>
+                </a>
+            </li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+{% endblock %}

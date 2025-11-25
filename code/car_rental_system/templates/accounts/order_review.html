@@ -1,0 +1,91 @@
+{% extends "base_user.html" %}
+{% load static %}
+
+{% block title %}订单评价 - 租车管理系统{% endblock %}
+
+{% block content %}
+<div class="profile-fullscreen">
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+        <div>
+            <h1 class="mb-1">
+                <i class="fas fa-star me-2 text-warning"></i>评价订单 #{{ rental.id }}
+            </h1>
+            <p class="text-muted mb-0">车辆：{{ rental.vehicle.brand }} {{ rental.vehicle.model }} · {{ rental.vehicle.license_plate }}</p>
+        </div>
+        <a href="{% url 'accounts:order_detail' rental.id %}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i>返回订单详情
+        </a>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>订单信息</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <p class="text-muted mb-1">租赁日期</p>
+                        <p class="mb-0 fw-semibold">
+                            {{ rental.start_date|date:"Y-m-d" }} ~ {{ rental.end_date|date:"Y-m-d" }}
+                            <span class="badge bg-secondary ms-2">{{ rental.rental_days }} 天</span>
+                        </p>
+                    </div>
+                    <div class="mb-3">
+                        <p class="text-muted mb-1">取还车地点</p>
+                        <p class="mb-0">{{ rental.pickup_location|default:"-" }} → {{ rental.return_location|default:"-" }}</p>
+                    </div>
+                    <div class="mb-3">
+                        <p class="text-muted mb-1">费用信息</p>
+                        <p class="mb-0">应付金额：<strong class="text-primary">¥{{ rental.calculate_order_total|floatformat:2 }}</strong></p>
+                        <p class="mb-0">已支付：<span class="text-success">¥{{ rental.amount_paid|default:"0.00"|floatformat:2 }}</span></p>
+                        <p class="mb-0">已退款：<span class="text-secondary">¥{{ rental.amount_refunded|default:"0.00"|floatformat:2 }}</span></p>
+                    </div>
+                    <div>
+                        <p class="text-muted mb-1">状态</p>
+                        <span class="badge bg-success">已完成</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-8">
+            <div class="card shadow">
+                <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-pen me-2"></i>撰写评价</h5>
+                    <span class="text-muted small">感谢分享体验，我们将持续优化服务。</span>
+                </div>
+                <div class="card-body">
+                    <form method="post" novalidate>
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">评分（1-5星）</label>
+                            {{ form.rating }}
+                            {% if form.rating.errors %}
+                                <div class="text-danger small mt-1">{{ form.rating.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">评价内容</label>
+                            {{ form.comment }}
+                            <small class="text-muted d-block mt-1">可选，最多1000字。可以从车况、服务、体验等方面进行描述。</small>
+                            {% if form.comment.errors %}
+                                <div class="text-danger small mt-1">{{ form.comment.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-paper-plane me-2"></i>提交评价
+                            </button>
+                            <a href="{% url 'accounts:order_detail' rental.id %}" class="btn btn-outline-secondary">
+                                取消
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

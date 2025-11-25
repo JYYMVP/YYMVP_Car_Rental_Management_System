@@ -1,0 +1,81 @@
+
+租车管理系统测试报告
+==============================================
+测试时间: 2025-11-06 23:20:15
+执行时间: 1.72 秒
+
+测试概览:
+- 总测试数: 9
+- 通过测试: 7 ✅
+- 失败测试: 1 ❌
+- 警告测试: 1 ⚠️
+
+详细结果:
+
+✅ 数据库连接测试
+   状态: 数据库连接正常 - 车辆:17, 客户:40, 租赁:25
+   vehicle_count: 17
+   customer_count: 40
+   rental_count: 25
+   vip_rental_count: 13
+
+✅ 车辆管理测试
+   状态: 车辆管理功能正常
+   total_vehicles: 18
+   available_vehicles: 12
+   rented_vehicles: 6
+   avg_daily_rate: 352.0
+   page_count: 2
+
+✅ 客户管理测试
+   状态: 客户管理功能正常
+   total_customers: 40
+   vip_customers: 15
+   normal_customers: 25
+   customers_with_rentals: 20
+   top_customers: [{'name': '测试客户1', 'rental_count': 2, 'total_spent': 1800.0}, {'name': '测试客户2', 'rental_count': 3, 'total_spent': 3000.0}, {'name': '李娜', 'rental_count': 1, 'total_spent': 800.0}, {'name': '王强', 'rental_count': 2, 'total_spent': 2800.0}, {'name': '赵丽', 'rental_count': 2, 'total_spent': 2400.0}]
+
+✅ 租赁管理测试
+   状态: 租赁管理功能正常
+   total_rentals: 25
+   pending_rentals: 6
+   ongoing_rentals: 6
+   completed_rentals: 12
+   total_revenue: 15520.0
+   avg_revenue: 1293.0
+   available_vehicles: 11
+   top_customers: [{'name': '测试客户2', 'rental_count': 3, 'total_spent': 3000.0}, {'name': '测试客户1', 'rental_count': 2, 'total_spent': 1800.0}, {'name': '王强', 'rental_count': 2, 'total_spent': 2800.0}, {'name': '赵丽', 'rental_count': 2, 'total_spent': 2400.0}, {'name': '李娜', 'rental_count': 1, 'total_spent': 800.0}]
+
+✅ 业务逻辑测试
+   状态: 业务逻辑验证通过
+   rented_vehicle_consistency: 5
+   total_vip_savings: 816.0
+   overdue_rentals: 0
+   vehicles_cannot_delete: 12
+
+✅ 性能测试
+   状态: 性能测试 3/3 项达标
+   complex_query_time: 0.006
+   aggregation_time: 0.007
+   batch_query_time: 0.005
+   results_count: 13
+   performance_score: 3/3
+
+✅ 数据完整性测试
+   状态: 数据完整性 4/5 项正常
+   integrity_score: 4/5
+   orphaned_rentals: 0
+   duplicate_plates: 0
+   invalid_phones: 0
+   status_issues: 1
+   date_issues: 0
+   issues: ['状态不一致车辆: 1']
+
+⚠️ Web界面测试
+   状态: Web界面测试 1/4 页面可访问
+   accessible_pages: 1/4
+   form_tests_passed: 0/2
+   page_results: [{'page': '主页', 'status': "ERROR: Reverse for 'vehicle_list' not found. 'vehicle_list' is not a valid view function or pattern name."}, {'page': '车辆管理', 'status': "ERROR: Reverse for 'vehicle_list' not found. 'vehicle_list' is not a valid view function or pattern name."}, {'page': '客户管理', 'status': "ERROR: Reverse for 'vehicle_list' not found. 'vehicle_list' is not a valid view function or pattern name."}, {'page': '租赁管理', 'status': 'OK'}]
+
+❌ 安全性测试
+   状态: 安全性测试失败: Reverse for 'vehicle_list' not found. 'vehicle_list' is not a valid view function or pattern name.

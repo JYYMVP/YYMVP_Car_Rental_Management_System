@@ -1,0 +1,148 @@
+{% extends "vehicles/base.html" %}
+
+{% block title %}删除车辆 - {{ vehicle.license_plate }} - 租车管理系统{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1><i class="bi bi-trash"></i> 删除车辆</h1>
+    <a href="{% url 'vehicles:vehicle_detail' vehicle.pk %}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> 返回详情
+    </a>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card border-danger">
+            <div class="card-header bg-danger text-white">
+                <h5 class="mb-0">
+                    <i class="bi bi-exclamation-triangle"></i> 确认删除
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if active_rentals %}
+                <!-- 有活跃租赁订单时的提示 -->
+                <div class="alert alert-danger">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    <strong>无法删除车辆！</strong>
+                    <p class="mb-2">车辆 <strong>{{ vehicle.license_plate }}</strong> 存在以下活跃的租赁订单：</p>
+                    <ul class="mb-2">
+                        {% for rental in active_rentals %}
+                        <li>订单号：<strong>{{ rental.order_number }}</strong> - 
+                            客户：<strong>{{ rental.customer.name }}</strong> - 
+                            租期：{{ rental.start_date|date:"Y-m-d" }} 至 {{ rental.end_date|date:"Y-m-d" }}
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    <p class="mb-0">
+                        <strong>请先完成或取消这些租赁订单后，再尝试删除车辆。</strong>
+                    </p>
+                </div>
+                
+                <div class="d-flex justify-content-end">
+                    <a href="{% url 'vehicles:vehicle_detail' vehicle.pk %}" class="btn btn-secondary">
+                        <i class="bi bi-arrow-left"></i> 返回详情
+                    </a>
+                </div>
+                {% else %}
+                <!-- 确认删除 -->
+                <div class="text-center mb-4">
+                    <i class="bi bi-exclamation-triangle text-danger" style="font-size: 3rem;"></i>
+                    <h4 class="mt-3 text-danger">确定要删除这个车辆吗？</h4>
+                    <p class="text-muted">此操作无法撤销，请谨慎操作。</p>
+                </div>
+
+                <!-- 车辆信息预览 -->
+                <div class="card bg-light">
+                    <div class="card-body">
+                        <h6 class="card-title">即将删除的车辆信息：</h6>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <table class="table table-sm table-borderless">
+                                    <tr>
+                                        <td><strong>车牌号：</strong></td>
+                                        <td class="text-danger">{{ vehicle.license_plate }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>品牌：</strong></td>
+                                        <td>{{ vehicle.brand }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>型号：</strong></td>
+                                        <td>{{ vehicle.model }}</td>
+                                    </tr>
+                                </table>
+                            </div>
+                            <div class="col-md-6">
+                                <table class="table table-sm table-borderless">
+                                    <tr>
+                                        <td><strong>类型：</strong></td>
+                                        <td>{{ vehicle.vehicle_type }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>颜色：</strong></td>
+                                        <td>{{ vehicle.color }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>日租金：</strong></td>
+                                        <td class="text-success">¥{{ vehicle.daily_rate }}</td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 风险提示 -->
+                <div class="alert alert-warning mt-3">
+                    <i class="bi bi-info-circle"></i>
+                    <strong>删除风险提示：</strong>
+                    <ul class="mb-0">
+                        <li>删除车辆后，其相关租赁记录也将被永久删除</li>
+                        <li>此操作无法撤销，请确保您真的要删除此车辆</li>
+                        <li>如果该车辆曾经被租赁，建议保留以便查询历史记录</li>
+                    </ul>
+                </div>
+
+                <!-- 确认表单 -->
+                <form method="post" onsubmit="return confirmDelete('确定要删除车辆 {{ vehicle.license_plate }} 吗？此操作无法撤销！');">
+                    {% csrf_token %}
+                    <div class="d-flex justify-content-end gap-2">
+                        <a href="{% url 'vehicles:vehicle_detail' vehicle.pk %}" class="btn btn-secondary">
+                            <i class="bi bi-x-circle"></i> 取消
+                        </a>
+                        <button type="submit" class="btn btn-danger">
+                            <i class="bi bi-trash"></i> 确认删除
+                        </button>
+                    </div>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- 替代方案提示 -->
+        {% if not active_rentals %}
+        <div class="card mt-3 border-info">
+            <div class="card-body">
+                <h6 class="text-info">
+                    <i class="bi bi-lightbulb"></i> 建议
+                </h6>
+                <p class="mb-0">
+                    如果您只是想暂时停用车辆，建议将车辆状态设置为"维修中"而不是删除。
+                    这样可以保留车辆信息并避免意外删除重要数据。
+                </p>
+                <div class="mt-2">
+                    <a href="{% url 'vehicles:vehicle_status_update' vehicle.pk %}" 
+                       onclick="updateVehicleStatus({{ vehicle.pk }}, 'MAINTENANCE', this); return false;" 
+                       class="btn btn-outline-warning btn-sm">
+                        <i class="bi bi-tools"></i> 设为维修中
+                    </a>
+                    <a href="{% url 'vehicles:vehicle_update' vehicle.pk %}" class="btn btn-outline-primary btn-sm">
+                        <i class="bi bi-pencil"></i> 编辑车辆
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

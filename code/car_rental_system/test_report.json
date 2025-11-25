@@ -1,0 +1,186 @@
+{
+  "test_summary": {
+    "total_tests": 9,
+    "passed_tests": 7,
+    "failed_tests": 1,
+    "warned_tests": 1,
+    "execution_time": 1.717010736465454
+  },
+  "test_details": {
+    "数据库连接测试": {
+      "status": "PASS",
+      "message": "数据库连接正常 - 车辆:17, 客户:40, 租赁:25",
+      "details": {
+        "vehicle_count": 17,
+        "customer_count": 40,
+        "rental_count": 25,
+        "vip_rental_count": 13
+      },
+      "timestamp": "2025-11-06T23:20:13.929302"
+    },
+    "车辆管理测试": {
+      "status": "PASS",
+      "message": "车辆管理功能正常",
+      "details": {
+        "total_vehicles": 18,
+        "available_vehicles": 12,
+        "rented_vehicles": 6,
+        "avg_daily_rate": 352.0,
+        "page_count": 2
+      },
+      "timestamp": "2025-11-06T23:20:14.037867"
+    },
+    "客户管理测试": {
+      "status": "PASS",
+      "message": "客户管理功能正常",
+      "details": {
+        "total_customers": 40,
+        "vip_customers": 15,
+        "normal_customers": 25,
+        "customers_with_rentals": 20,
+        "top_customers": [
+          {
+            "name": "测试客户1",
+            "rental_count": 2,
+            "total_spent": 1800.0
+          },
+          {
+            "name": "测试客户2",
+            "rental_count": 3,
+            "total_spent": 3000.0
+          },
+          {
+            "name": "李娜",
+            "rental_count": 1,
+            "total_spent": 800.0
+          },
+          {
+            "name": "王强",
+            "rental_count": 2,
+            "total_spent": 2800.0
+          },
+          {
+            "name": "赵丽",
+            "rental_count": 2,
+            "total_spent": 2400.0
+          }
+        ]
+      },
+      "timestamp": "2025-11-06T23:20:14.088627"
+    },
+    "租赁管理测试": {
+      "status": "PASS",
+      "message": "租赁管理功能正常",
+      "details": {
+        "total_rentals": 25,
+        "pending_rentals": 6,
+        "ongoing_rentals": 6,
+        "completed_rentals": 12,
+        "total_revenue": 15520.0,
+        "avg_revenue": 1293.0,
+        "available_vehicles": 11,
+        "top_customers": [
+          {
+            "name": "测试客户2",
+            "rental_count": 3,
+            "total_spent": 3000.0
+          },
+          {
+            "name": "测试客户1",
+            "rental_count": 2,
+            "total_spent": 1800.0
+          },
+          {
+            "name": "王强",
+            "rental_count": 2,
+            "total_spent": 2800.0
+          },
+          {
+            "name": "赵丽",
+            "rental_count": 2,
+            "total_spent": 2400.0
+          },
+          {
+            "name": "李娜",
+            "rental_count": 1,
+            "total_spent": 800.0
+          }
+        ]
+      },
+      "timestamp": "2025-11-06T23:20:14.127992"
+    },
+    "业务逻辑测试": {
+      "status": "PASS",
+      "message": "业务逻辑验证通过",
+      "details": {
+        "rented_vehicle_consistency": 5,
+        "total_vip_savings": 816.0,
+        "overdue_rentals": 0,
+        "vehicles_cannot_delete": 12
+      },
+      "timestamp": "2025-11-06T23:20:14.311499"
+    },
+    "性能测试": {
+      "status": "PASS",
+      "message": "性能测试 3/3 项达标",
+      "details": {
+        "complex_query_time": 0.006,
+        "aggregation_time": 0.007,
+        "batch_query_time": 0.005,
+        "results_count": 13,
+        "performance_score": "3/3"
+      },
+      "timestamp": "2025-11-06T23:20:14.329682"
+    },
+    "数据完整性测试": {
+      "status": "PASS",
+      "message": "数据完整性 4/5 项正常",
+      "details": {
+        "integrity_score": "4/5",
+        "orphaned_rentals": 0,
+        "duplicate_plates": 0,
+        "invalid_phones": 0,
+        "status_issues": 1,
+        "date_issues": 0,
+        "issues": [
+          "状态不一致车辆: 1"
+        ]
+      },
+      "timestamp": "2025-11-06T23:20:14.410781"
+    },
+    "Web界面测试": {
+      "status": "WARN",
+      "message": "Web界面测试 1/4 页面可访问",
+      "details": {
+        "accessible_pages": "1/4",
+        "form_tests_passed": "0/2",
+        "page_results": [
+          {
+            "page": "主页",
+            "status": "ERROR: Reverse for 'vehicle_list' not found. 'vehicle_list' is not a valid view function or pattern name."
+          },
+          {
+            "page": "车辆管理",
+            "status": "ERROR: Reverse for 'vehicle_list' not found. 'vehicle_list' is not a valid view function or pattern name."
+          },
+          {
+            "page": "客户管理",
+            "status": "ERROR: Reverse for 'vehicle_list' not found. 'vehicle_list' is not a valid view function or pattern name."
+          },
+          {
+            "page": "租赁管理",
+            "status": "OK"
+          }
+        ]
+      },
+      "timestamp": "2025-11-06T23:20:15.438921"
+    },
+    "安全性测试": {
+      "status": "FAIL",
+      "message": "安全性测试失败: Reverse for 'vehicle_list' not found. 'vehicle_list' is not a valid view function or pattern name.",
+      "details": {},
+      "timestamp": "2025-11-06T23:20:15.590241"
+    }
+  },
+  "generated_at": "2025-11-06T23:20:15.590264"
+}

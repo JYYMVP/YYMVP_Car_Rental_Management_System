@@ -1,0 +1,191 @@
+{% extends "vehicles/base.html" %}
+
+{% block title %}客户列表 - 租车管理系统{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1><i class="bi bi-people"></i> 客户列表</h1>
+    <a href="{% url 'customers:customer_create' %}" class="btn btn-primary">
+        <i class="bi bi-person-plus"></i> 添加客户
+    </a>
+</div>
+
+<!-- 搜索和筛选 -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-4">
+            <div class="col-lg-5 col-md-5">
+                <label for="search" class="form-label">搜索</label>
+                <input type="text" class="form-control" id="search" name="search" 
+                       placeholder="按姓名或手机号搜索" value="{{ search_form.search.value|default:'' }}">
+            </div>
+            <div class="col-lg-3 col-md-3">
+                <label for="member_level" class="form-label">会员等级</label>
+                <select class="form-select" id="member_level" name="member_level">
+                    {% for value, label in search_form.member_level.field.choices %}
+                    <option value="{{ value }}" {% if search_form.member_level.value == value %}selected{% endif %}>
+                        {{ label }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-lg-4 col-md-4">
+                <label class="form-label">&nbsp;</label>
+                <div class="d-flex flex-column gap-2">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-search"></i> 搜索
+                    </button>
+                    <a href="{% url 'customers:customer_list' %}" class="btn btn-secondary">
+                        <i class="bi bi-arrow-clockwise"></i> 重置
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- 客户列表 -->
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0"><i class="bi bi-table"></i> 客户信息</h5>
+        <div class="text-muted small">
+            第 {{ page_obj.number }} 页，共 {{ page_obj.paginator.num_pages }} 页
+        </div>
+    </div>
+    <div class="card-body p-0">
+        {% if page_obj %}
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>客户信息</th>
+                        <th>联系方式</th>
+                        <th>会员等级</th>
+                        <th>租赁统计</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for customer in page_obj %}
+                    <tr>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <div class="me-3">
+                                    <i class="bi bi-person-circle text-primary" style="font-size: 1.5rem;"></i>
+                                </div>
+                                <div>
+                                    <h6 class="mb-1">{{ customer.name }}</h6>
+                                    <small class="text-muted">身份证: {{ customer.id_card }}</small><br>
+                                    <small class="text-muted">驾照: {{ customer.license_number }}</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <div>
+                                <div><i class="bi bi-telephone"></i> {{ customer.phone }}</div>
+                                {% if customer.email %}
+                                <div class="small text-muted"><i class="bi bi-envelope"></i> {{ customer.email }}</div>
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td>
+                            {% if customer.member_level == 'VIP' %}
+                                <span class="badge bg-warning">
+                                    <i class="bi bi-star-fill"></i> VIP会员
+                                </span>
+                            {% else %}
+                                <span class="badge bg-secondary">
+                                    <i class="bi bi-person"></i> 普通会员
+                                </span>
+                            {% endif %}
+                            <br>
+                            <small class="text-muted">{{ customer.get_license_type_display }}</small>
+                        </td>
+                        <td>
+                            <div>
+                                <span class="badge bg-info">{{ customer.total_rentals|default:0 }} 次</span>
+                                <br>
+                                <small class="text-success">¥{{ customer.total_amount|default:0|floatformat:2 }}</small>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="btn-group" role="group">
+                                <a href="{% url 'customers:customer_detail' customer.pk %}" 
+                                   class="btn btn-sm btn-outline-primary" title="查看详情">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                <a href="{% url 'customers:customer_update' customer.pk %}" 
+                                   class="btn btn-sm btn-outline-secondary" title="编辑">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <a href="{% url 'customers:customer_delete' customer.pk %}" 
+                                   class="btn btn-sm btn-outline-danger" title="删除">
+                                    <i class="bi bi-trash"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5">
+            <i class="bi bi-people text-muted" style="font-size: 3rem;"></i>
+            <h5 class="text-muted mt-3">暂无客户数据</h5>
+            <p class="text-muted">请添加客户或调整搜索条件</p>
+            <a href="{% url 'customers:customer_create' %}" class="btn btn-primary">
+                <i class="bi bi-person-plus"></i> 添加第一个客户
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- 分页导航 -->
+{% if page_obj.paginator.num_pages > 1 %}
+<nav aria-label="客户分页" class="mt-4">
+    <ul class="pagination justify-content-center">
+        {% if page_obj.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?page=1{% if search_form.search.value %}&search={{ search_form.search.value }}{% endif %}{% if search_form.member_level.value %}&member_level={{ search_form.member_level.value }}{% endif %}">
+                    <i class="bi bi-chevron-double-left"></i> 首页
+                </a>
+            </li>
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search_form.search.value %}&search={{ search_form.search.value }}{% endif %}{% if search_form.member_level.value %}&member_level={{ search_form.member_level.value }}{% endif %}">
+                    <i class="bi bi-chevron-left"></i> 上一页
+                </a>
+            </li>
+        {% endif %}
+
+        {% for num in page_obj.paginator.page_range %}
+            {% if page_obj.number == num %}
+                <li class="page-item active">
+                    <span class="page-link">{{ num }}</span>
+                </li>
+            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ num }}{% if search_form.search.value %}&search={{ search_form.search.value }}{% endif %}{% if search_form.member_level.value %}&member_level={{ search_form.member_level.value }}{% endif %}">
+                        {{ num }}
+                    </a>
+                </li>
+            {% endif %}
+        {% endfor %}
+
+        {% if page_obj.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search_form.search.value %}&search={{ search_form.search.value }}{% endif %}{% if search_form.member_level.value %}&member_level={{ search_form.member_level.value }}{% endif %}">
+                    下一页 <i class="bi bi-chevron-right"></i>
+                </a>
+            </li>
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if search_form.search.value %}&search={{ search_form.search.value }}{% endif %}{% if search_form.member_level.value %}&member_level={{ search_form.member_level.value }}{% endif %}">
+                    末页 <i class="bi bi-chevron-double-right"></i>
+                </a>
+            </li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+{% endblock %}

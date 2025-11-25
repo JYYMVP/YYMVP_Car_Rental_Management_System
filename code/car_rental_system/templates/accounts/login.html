@@ -1,0 +1,228 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>用户登录 - 租车管理系统</title>
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" 
+          rel="stylesheet" 
+          crossorigin="anonymous">
+    
+    <!-- Font Awesome 图标 -->
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" 
+          rel="stylesheet" 
+          crossorigin="anonymous">
+    
+    <!-- 自定义CSS -->
+    <link href="{% static 'css/style.css' %}" rel="stylesheet">
+    
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem 1rem;
+            margin: 0;
+        }
+        .login-container {
+            width: 100%;
+            max-width: 450px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .login-card {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+            width: 100%;
+        }
+        .login-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem;
+            text-align: center;
+        }
+        .login-body {
+            padding: 2rem;
+        }
+        .login-tabs {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            border: 1px solid rgba(255,255,255,0.3);
+            border-radius: 999px;
+            overflow: hidden;
+            background: rgba(255,255,255,0.2);
+        }
+        .tab-btn {
+            background: transparent;
+            border: none;
+            color: rgba(255,255,255,0.85);
+            padding: 0.75rem 1rem;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+        .tab-btn.active {
+            background: rgba(255,255,255,0.95);
+            color: #5a67d8;
+        }
+        .tab-btn:not(.active):hover {
+            color: #fff;
+        }
+        .hint-box {
+            padding: 0.75rem 1rem;
+            border-radius: 12px;
+            background: rgba(90, 103, 216, 0.08);
+            border: 1px solid rgba(90, 103, 216, 0.15);
+            font-size: 0.9rem;
+            margin-bottom: 1.25rem;
+        }
+        .hint-box i {
+            color: #5a67d8;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-card">
+            <div class="login-header">
+                <h2><i class="fas fa-car me-2"></i>租车管理系统</h2>
+                <p class="mb-0" id="loginSubtitle">
+                    {% if login_type == 'admin' %}管理员登录{% else %}用户登录{% endif %}
+                </p>
+                <small class="d-block mt-2 opacity-75">
+                    {% if login_type == 'admin' %}
+                        仅限拥有管理员权限的账号
+                    {% else %}
+                        普通用户登录后可浏览车辆、创建订单
+                    {% endif %}
+                </small>
+            </div>
+
+            <div class="px-4 py-3" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                <div class="login-tabs">
+                    <button type="button" class="tab-btn {% if login_type != 'admin' %}active{% endif %}" data-type="user">
+                        <i class="fas fa-user me-1"></i> 用户登录
+                    </button>
+                    <button type="button" class="tab-btn {% if login_type == 'admin' %}active{% endif %}" data-type="admin">
+                        <i class="fas fa-shield-alt me-1"></i> 管理员登录
+                    </button>
+                </div>
+            </div>
+            
+            <div class="login-body">
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+                
+                <div class="hint-box {% if login_type == 'admin' %}d-none{% endif %}" id="userHint">
+                    <i class="fas fa-info-circle me-1"></i>
+                    登录后可浏览车辆、提交租车订单并管理个人资料。
+                </div>
+                <div class="hint-box {% if login_type != 'admin' %}d-none{% endif %}" id="adminHint">
+                    <i class="fas fa-shield-alt me-1"></i>
+                    仅限拥有管理员权限的账号，登录后进入后台仪表板。
+                </div>
+
+                <form method="post" action="{% url 'accounts:login' %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="login_type" id="loginTypeInput" value="{{ login_type|default:'user' }}">
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.username.id_for_label }}" class="form-label">
+                            <i class="fas fa-user me-1"></i>{{ form.username.label }}
+                        </label>
+                        {{ form.username }}
+                        {% if form.username.errors %}
+                            <div class="text-danger small">{{ form.username.errors }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.password.id_for_label }}" class="form-label">
+                            <i class="fas fa-lock me-1"></i>{{ form.password.label }}
+                        </label>
+                        {{ form.password }}
+                        {% if form.password.errors %}
+                            <div class="text-danger small">{{ form.password.errors }}</div>
+                        {% endif %}
+                        {% if form.non_field_errors %}
+                            <div class="text-danger small">{{ form.non_field_errors }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3 form-check">
+                        {{ form.remember_me }}
+                        <label class="form-check-label" for="{{ form.remember_me.id_for_label }}">
+                            {{ form.remember_me.label }}
+                        </label>
+                    </div>
+                    
+                    <div class="d-grid mb-3">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="fas fa-sign-in-alt me-2"></i>登录
+                        </button>
+                    </div>
+                    
+                    <div class="text-center">
+                        <p class="mb-2">还没有账号？</p>
+                        <a href="{% url 'accounts:register' %}" class="btn btn-outline-primary">
+                            <i class="fas fa-user-plus me-2"></i>立即注册
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Bootstrap 5 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" 
+            crossorigin="anonymous"></script>
+
+    <script>
+        (function() {
+            const tabs = document.querySelectorAll('.tab-btn');
+            const loginTypeInput = document.getElementById('loginTypeInput');
+            const loginSubtitle = document.getElementById('loginSubtitle');
+            const userHint = document.getElementById('userHint');
+            const adminHint = document.getElementById('adminHint');
+
+            function updateState(type) {
+                tabs.forEach(btn => btn.classList.toggle('active', btn.dataset.type === type));
+                loginTypeInput.value = type;
+                if (type === 'admin') {
+                    loginSubtitle.textContent = '管理员登录';
+                    userHint.classList.add('d-none');
+                    adminHint.classList.remove('d-none');
+                } else {
+                    loginSubtitle.textContent = '用户登录';
+                    userHint.classList.remove('d-none');
+                    adminHint.classList.add('d-none');
+                }
+            }
+
+            tabs.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    updateState(this.dataset.type);
+                });
+            });
+
+            updateState(loginTypeInput.value || 'user');
+        })();
+    </script>
+</body>
+</html>
+

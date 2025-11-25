@@ -1,0 +1,96 @@
+{% extends "rentals/base.html" %}
+
+{% block title %}更新订单状态{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-arrow-repeat me-2"></i>更新订单状态
+                </h5>
+            </div>
+            <div class="card-body">
+                <!-- 订单信息 -->
+                <div class="alert alert-info">
+                    <h6 class="alert-heading">订单信息</h6>
+                    <p class="mb-1"><strong>订单号：</strong>#{{ rental.id }}</p>
+                    <p class="mb-1"><strong>客户：</strong>{{ rental.customer.name }}</p>
+                    <p class="mb-0"><strong>车辆：</strong>{{ rental.vehicle.brand }} {{ rental.vehicle.model }} ({{ rental.vehicle.license_plate }})</p>
+                </div>
+                
+                <!-- 当前状态 -->
+                <div class="mb-3">
+                    <label class="form-label">当前状态</label>
+                    <div class="form-control-plaintext">
+                        <span class="badge status-badge status-{{ rental.status|lower }} fs-6">
+                            {{ rental.get_status_display }}
+                        </span>
+                    </div>
+                </div>
+                
+                <!-- 状态更新表单 -->
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="{{ form.status.id_for_label }}" class="form-label">
+                            {{ form.status.label }}
+                            <span class="text-danger">*</span>
+                        </label>
+                        {{ form.status }}
+                        {% if form.status.errors %}
+                            <div class="text-danger small mt-1">
+                                {{ form.status.errors.0 }}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="d-flex justify-content-end">
+                        <a href="{% url 'rentals:rental_detail' rental.id %}" class="btn btn-outline-secondary me-2">
+                            <i class="bi bi-x-circle me-2"></i>取消
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check me-2"></i>更新状态
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 状态转换说明 -->
+<div class="row justify-content-center mt-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="card-title mb-0">
+                    <i class="bi bi-info-circle me-2"></i>状态转换规则
+                </h6>
+            </div>
+            <div class="card-body">
+                <ul class="list-unstyled mb-0">
+                    <li class="mb-2">
+                        <span class="badge bg-info me-2">预订中</span>
+                        可以转换为：
+                        <span class="badge bg-success ms-2">进行中</span>
+                        <span class="badge bg-danger ms-2">已取消</span>
+                    </li>
+                    <li class="mb-2">
+                        <span class="badge bg-success me-2">进行中</span>
+                        可以转换为：
+                        <span class="badge bg-secondary ms-2">已完成</span>
+                        <span class="badge bg-danger ms-2">已取消</span>
+                    </li>
+                    <li>
+                        <span class="badge bg-secondary me-2">已完成</span>
+                        <span class="badge bg-danger me-2">已取消</span>
+                        状态不能继续转换
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

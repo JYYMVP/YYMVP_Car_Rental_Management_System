@@ -1,0 +1,153 @@
+{% extends "base_user.html" %}
+{% load static %}
+
+{% block title %}消费明细 - 租车管理系统{% endblock %}
+
+{% block content %}
+<div class="profile-fullscreen">
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+        <div>
+            <h1 class="mb-1"><i class="fas fa-file-invoice-dollar me-2"></i>消费明细</h1>
+            <p class="text-muted mb-0">实时掌握每一笔支付与退款，清晰透明</p>
+        </div>
+        <div class="d-flex flex-wrap gap-2">
+            <a href="{% url 'accounts:my_orders' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-list me-2"></i>我的订单
+            </a>
+        </div>
+    </div>
+    
+    {% if consumption_items %}
+        {% for item in consumption_items %}
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-light d-flex flex-wrap justify-content-between align-items-center gap-2">
+                <div>
+                    <h5 class="mb-1">订单 #{{ item.rental.id }} · {{ item.rental.vehicle.brand }} {{ item.rental.vehicle.model }}</h5>
+                    <small class="text-muted">
+                        {{ item.rental.start_date|date:"Y-m-d" }} - {{ item.rental.end_date|date:"Y-m-d" }}
+                        · 共 {{ item.rental.rental_days }} 天
+                    </small>
+                </div>
+                <div class="d-flex flex-wrap gap-2">
+                    <span class="badge bg-primary">{{ item.rental.get_status_display }}</span>
+                    <span class="badge bg-dark text-white">{{ item.rental.get_settlement_status_display }}</span>
+                    {% if item.rental.status in 'COMPLETED CANCELLED' and item.summary.refunded_amount > 0 %}
+                    <span class="badge bg-success text-white">
+                        <i class="fas fa-undo-alt me-1"></i>已退还 ¥{{ item.summary.refunded_amount|floatformat:2 }}
+                    </span>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row g-3 mb-3">
+                    <div class="col-md-3">
+                        <div class="border rounded-3 p-3 h-100">
+                            <p class="text-muted mb-1">应付总额</p>
+                            <h4 class="mb-0 text-primary">¥{{ item.summary.order_total_amount|floatformat:2 }}</h4>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="border rounded-3 p-3 h-100">
+                            <p class="text-muted mb-1">已支付</p>
+                            <h4 class="mb-0 text-success">¥{{ item.summary.paid_amount|floatformat:2 }}</h4>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="border rounded-3 p-3 h-100">
+                            <p class="text-muted mb-1">已退款</p>
+                            <h4 class="mb-0 text-secondary">¥{{ item.summary.refunded_amount|floatformat:2 }}</h4>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="border rounded-3 p-3 h-100">
+                            <p class="text-muted mb-1">待支付</p>
+                            <h4 class="mb-0 text-warning">¥{{ item.summary.remaining_amount|floatformat:2 }}</h4>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <div class="border rounded-3 p-3 h-100">
+                            <p class="text-muted mb-2">费用拆分</p>
+                            <ul class="list-unstyled mb-0 text-muted">
+                                <li class="mb-1 d-flex justify-content-between">
+                                    <span>基础租金</span>
+                                    <strong>¥{{ item.summary.base_amount|floatformat:2 }}</strong>
+                                </li>
+                                <li class="mb-1 d-flex justify-content-between">
+                                    <span>押金</span>
+                                    <strong>¥{{ item.summary.deposit_amount|floatformat:2 }}</strong>
+                                </li>
+                                {% if item.summary.cross_location_fee > 0 %}
+                                <li class="mb-1 d-flex justify-content-between">
+                                    <span>异地还车费</span>
+                                    <strong>¥{{ item.summary.cross_location_fee|floatformat:2 }}</strong>
+                                </li>
+                                {% endif %}
+                                <li class="border-top pt-2 d-flex justify-content-between">
+                                    <span>净支付（已支付-已退款）</span>
+                                    <strong>¥{{ item.summary.net_paid|floatformat:2 }}</strong>
+                                </li>
+                                {% if item.summary.refunded_amount > 0 %}
+                                <li class="d-flex justify-content-between text-success">
+                                    <span>退款总额</span>
+                                    <strong>-¥{{ item.summary.refunded_amount|floatformat:2 }}</strong>
+                                </li>
+                                {% endif %}
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="border rounded-3 p-3 h-100">
+                            <p class="text-muted mb-2">支付 / 退款流水</p>
+                            {% if item.transactions %}
+                            <div class="table-responsive">
+                                <table class="table table-sm mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th>时间</th>
+                                            <th>类型</th>
+                                            <th class="text-end">金额</th>
+                                            <th>备注</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for payment in item.transactions %}
+                                        <tr>
+                                            <td class="text-muted">{{ payment.paid_at|date:"Y-m-d H:i"|default:"-" }}</td>
+                                            <td>{{ payment.get_transaction_type_display }}</td>
+                                            <td class="text-end">
+                                                {% if payment.transaction_type == 'REFUND' %}
+                                                    <span class="text-secondary">-¥{{ payment.amount|floatformat:2 }}</span>
+                                                {% else %}
+                                                    <span class="text-success">¥{{ payment.amount|floatformat:2 }}</span>
+                                                {% endif %}
+                                            </td>
+                                            <td class="text-muted">{{ payment.description|default:"-" }}</td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            {% else %}
+                            <p class="text-muted mb-0">暂无交易记录</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <div class="card shadow-sm">
+            <div class="card-body text-center text-muted py-5">
+                <i class="fas fa-receipt fa-3x mb-3"></i>
+                <h5 class="mb-2">暂无消费记录</h5>
+                <p class="mb-0">完成首个订单后即可查看详细的支付及退款流水。</p>
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+

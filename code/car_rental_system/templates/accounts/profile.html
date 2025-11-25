@@ -1,0 +1,140 @@
+{% extends "base_user.html" %}
+{% load static %}
+
+{% block title %}个人中心 - 租车管理系统{% endblock %}
+
+{% block content %}
+<div class="profile-fullscreen">
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="mb-1"><i class="fas fa-user-circle me-2"></i>个人中心</h1>
+        <p class="text-muted mb-0">欢迎，{{ user.username }}！</p>
+    </div>
+</div>
+
+<!-- 用户信息卡片 -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>个人信息</h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-borderless">
+                    <tr>
+                        <th width="30%">用户名：</th>
+                        <td>{{ user.username }}</td>
+                    </tr>
+                    <tr>
+                        <th>邮箱：</th>
+                        <td>{{ user.email|default:"未设置" }}</td>
+                    </tr>
+                    <tr>
+                        <th>注册时间：</th>
+                        <td>{{ user.date_joined|date:"Y-m-d H:i" }}</td>
+                    </tr>
+                    <tr>
+                        <th>最后登录：</th>
+                        <td>{{ user.last_login|date:"Y-m-d H:i"|default:"从未登录" }}</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card shadow">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="fas fa-chart-bar me-2"></i>统计信息</h5>
+            </div>
+            <div class="card-body">
+                <div class="text-center">
+                    <h2 class="text-primary">{{ rental_stats.total|default:0 }}</h2>
+                    <p class="text-muted mb-0">订单总数</p>
+                </div>
+                {% if rental_stats.total_amount %}
+                <hr>
+                <div class="text-center">
+                    <h4 class="text-success">¥{{ rental_stats.total_amount|floatformat:2 }}</h4>
+                    <p class="text-muted mb-0 small">累计消费</p>
+                </div>
+                {% endif %}
+                <hr>
+                <div class="text-center">
+                    <a href="{% url 'accounts:home' %}" class="btn btn-primary">
+                        <i class="fas fa-car me-2"></i>浏览车辆
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 我的订单 -->
+<div class="card shadow">
+    <div class="card-header bg-info text-white">
+        <h5 class="mb-0"><i class="fas fa-list me-2"></i>我的订单</h5>
+    </div>
+    <div class="card-body">
+        {% if rentals %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>订单号</th>
+                            <th>车辆信息</th>
+                            <th>租赁日期</th>
+                            <th>状态</th>
+                            <th>总金额</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for rental in rentals %}
+                        <tr>
+                            <td>#{{ rental.id }}</td>
+                            <td>
+                                {{ rental.vehicle.brand }} {{ rental.vehicle.model }}
+                                <small class="text-muted d-block">{{ rental.vehicle.license_plate }}</small>
+                            </td>
+                            <td>
+                                {{ rental.start_date|date:"Y-m-d" }} 至 
+                                {{ rental.end_date|date:"Y-m-d" }}
+                            </td>
+                            <td>
+                                {% if rental.status == 'PENDING' %}
+                                    <span class="badge bg-warning">预订中</span>
+                                {% elif rental.status == 'ONGOING' %}
+                                    <span class="badge bg-info">进行中</span>
+                                {% elif rental.status == 'COMPLETED' %}
+                                    <span class="badge bg-success">已完成</span>
+                                {% elif rental.status == 'CANCELLED' %}
+                                    <span class="badge bg-secondary">已取消</span>
+                                {% endif %}
+                            </td>
+                            <td>¥{{ rental.total_amount|floatformat:2 }}</td>
+                            <td>
+                                <a href="{% url 'accounts:order_detail' rental.pk %}" 
+                                   class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-eye"></i> 查看
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                <p class="text-muted">您还没有任何订单</p>
+                <a href="{% url 'accounts:home' %}" class="btn btn-primary">
+                    <i class="fas fa-car me-2"></i>去租车
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+</div>
+{% endblock %}
+

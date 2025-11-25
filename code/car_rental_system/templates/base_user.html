@@ -1,0 +1,190 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}租车管理系统{% endblock %}</title>
+    
+    <!-- 关键CSS内联，避免阻塞渲染 -->
+    <style>
+        /* 关键样式 - 防止页面闪烁 */
+        body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+        .page-loader { 
+            position: fixed; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%; 
+            background: #fff; 
+            z-index: 9999; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+        }
+        .page-loader.hidden { display: none; }
+        .spinner-border { 
+            width: 3rem; 
+            height: 3rem; 
+            border: 0.25em solid currentColor;
+            border-right-color: transparent;
+            border-radius: 50%;
+            animation: spinner-border 0.75s linear infinite;
+        }
+        @keyframes spinner-border {
+            to { transform: rotate(360deg); }
+        }
+        /* 基础布局样式，不依赖Bootstrap */
+        .d-flex { display: flex; }
+        .align-items-center { align-items: center; }
+        .justify-content-center { justify-content: center; }
+        .text-center { text-center; }
+        .visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+    </style>
+    
+    <!-- 自定义CSS - 优先加载 -->
+    <link href="{% static 'css/style.css' %}" rel="stylesheet">
+    
+    <style>
+        /* 用户界面全屏样式 */
+        .page-content-wrapper {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            padding: 0;
+            width: 100%;
+        }
+        
+        .messages-container {
+            padding: 1rem 2rem;
+            margin-bottom: 0;
+        }
+        
+        .container-fluid.px-0 {
+            flex: 1;
+            padding-left: 0;
+            padding-right: 0;
+            width: 100%;
+            max-width: 100%;
+        }
+        
+        /* 个人中心页面全屏样式 */
+        .profile-fullscreen {
+            padding: 2rem;
+            width: 100%;
+        }
+        
+        body {
+            background: var(--gray-50, #f8f9fa);
+        }
+        
+        .main-content {
+            margin-left: 0;
+            width: 100%;
+            min-height: 100vh;
+        }
+        
+        /* 页面内容初始隐藏，加载完成后显示 */
+        .page-content-wrapper {
+            opacity: 0;
+            transition: opacity 0.3s ease-in;
+        }
+        
+        @media (max-width: 768px) {
+            .messages-container {
+                padding: 1rem;
+            }
+            
+            .profile-fullscreen {
+                padding: 1rem;
+            }
+        }
+    </style>
+    
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- 页面加载指示器 -->
+    <div id="pageLoader" class="page-loader">
+        <div class="text-center">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">加载中...</span>
+            </div>
+            <p class="mt-3 text-muted">加载中...</p>
+        </div>
+    </div>
+
+    <!-- 顶部导航 + 内容 -->
+    <div class="main-content" style="margin-left:0;">
+        <!-- 顶部导航栏 -->
+        <nav class="navbar business-nav">
+            <a class="nav-brand" href="{% url 'accounts:home' %}">
+                EliteCar 租赁
+                </a>
+            <div class="nav-links">
+                <a class="nav-link" href="{% url 'accounts:home' %}">首页</a>
+                    {% if user.is_authenticated %}
+                    <a class="nav-link" href="{% url 'accounts:my_orders' %}">我的订单</a>
+                    <a class="nav-link" href="{% url 'accounts:consumption_report' %}">消费明细</a>
+                    <a class="nav-link" href="{% url 'accounts:profile' %}">个人中心</a>
+                    <span class="user-chip">{{ user.username }}</span>
+                    <a class="btn btn-outline-secondary" href="{% url 'accounts:logout' %}">退出</a>
+                    {% else %}
+                    <a class="btn btn-outline-secondary" href="{% url 'accounts:login' %}">登录</a>
+                    <a class="btn btn-accent" href="{% url 'accounts:register' %}">注册</a>
+                    {% endif %}
+            </div>
+        </nav>
+
+        <!-- 页面内容 -->
+        <div class="page-content-wrapper">
+            {% if messages %}
+                <div class="messages-container">
+                    {% for message in messages %}
+                        <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-dismiss="alert"></button>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+            
+            <div class="container-fluid px-0">
+                {% block content %}{% endblock %}
+            </div>
+        </div>
+    </div>
+
+    <!-- 页面加载完成后隐藏加载器 -->
+    <script>
+        // 页面加载完成后隐藏加载指示器
+        window.addEventListener('load', function() {
+            var loader = document.getElementById('pageLoader');
+            if (loader) {
+                loader.classList.add('hidden');
+            }
+            
+            // 显示页面内容
+            var content = document.querySelector('.page-content-wrapper');
+            if (content) {
+                content.style.opacity = '1';
+            }
+        });
+        
+        // 如果资源加载失败，也隐藏加载器
+        setTimeout(function() {
+            var loader = document.getElementById('pageLoader');
+            if (loader && !loader.classList.contains('hidden')) {
+                loader.classList.add('hidden');
+            }
+        }, 5000); // 5秒后强制隐藏
+    </script>
+    
+    <!-- 自定义JS -->
+    <script src="{% static 'js/main.js' %}" defer></script>
+    
+    {% block extra_js %}{% endblock %}
+</body>
+</html>
+

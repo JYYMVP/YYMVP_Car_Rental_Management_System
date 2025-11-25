@@ -1,0 +1,165 @@
+{% extends "vehicles/base.html" %}
+
+{% block title %}删除客户确认 - 租车管理系统{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1><i class="bi bi-exclamation-triangle text-danger me-2"></i> 删除客户确认</h1>
+            <a href="{% url 'customers:customer_detail' customer.pk %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> 返回详情
+            </a>
+        </div>
+
+        {% if active_rentals > 0 %}
+            <!-- 有关联订单时的警告 -->
+            <div class="alert alert-warning border-start border-warning border-5 shadow-sm" role="alert">
+                <h4 class="alert-heading"><i class="bi bi-exclamation-triangle"></i> 无法删除客户</h4>
+                <p class="mb-3">客户 <strong>{{ customer.name }}</strong> 有关联的未完成租赁订单，无法删除。</p>
+                <hr>
+                <p class="mb-0">
+                    请先完成或取消以下订单：
+                    <span class="badge bg-warning">{{ active_rentals }} 个未完成订单</span>
+                </p>
+            </div>
+            
+            <div class="card shadow-sm border-0 mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-clock-history me-2"></i>相关租赁订单</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>车辆</th>
+                                    <th>租赁日期</th>
+                                    <th>状态</th>
+                                    <th>金额</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for rental in customer.rentals.all %}
+                                {% if rental.status in 'PENDING,ONGOING' %}
+                                <tr>
+                                    <td><strong>{{ rental.vehicle.brand }} {{ rental.vehicle.model }}</strong><br><small class="text-muted">{{ rental.vehicle.license_plate }}</small></td>
+                                    <td>{{ rental.start_date|date:"Y年m月d日" }}<br><small class="text-muted">至 {{ rental.end_date|date:"Y年m月d日" }}</small></td>
+                                    <td>
+                                        {% if rental.status == 'PENDING' %}
+                                            <span class="badge bg-info">预订中</span>
+                                        {% elif rental.status == 'ONGOING' %}
+                                            <span class="badge bg-warning">进行中</span>
+                                        {% endif %}
+                                    </td>
+                                    <td><strong>¥{{ rental.total_amount }}</strong></td>
+                                </tr>
+                                {% endif %}
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        {% else %}
+            <!-- 确认删除 -->
+            <div class="card shadow-lg border-0 mb-4">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0"><i class="bi bi-exclamation-circle me-2"></i>危险操作确认</h5>
+                </div>
+                <div class="card-body p-4">
+                    <div class="alert alert-danger border-start border-danger border-5 mb-4">
+                        <h5 class="alert-heading mb-2"><i class="bi bi-exclamation-triangle-fill me-2"></i>即将删除客户信息！</h5>
+                        <p class="mb-0">您即将删除客户 <strong>{{ customer.name }}</strong> 的所有信息、租赁记录、财务数据等，删除后无法恢复！</p>
+                    </div>
+
+                    <!-- 客户信息横向水平分布 -->
+                    <div class="mb-4">
+                        <h6 class="text-dark fw-bold mb-3"><i class="bi bi-file-earmark-text me-2" style="color: #dc3545;"></i>此次将丢失的客户信息</h6>
+                        <div class="row g-3">
+                            <div class="col-lg-3 col-md-6 col-sm-6">
+                                <div class="p-3 bg-white border-start border-danger border-5 rounded shadow-sm">
+                                    <small class="text-muted d-block mb-2"><i class="bi bi-person me-1"></i>客户姓名</small>
+                                    <h6 class="mb-0 text-dark">{{ customer.name }}</h6>
+                                </div>
+                            </div>
+                            <div class="col-lg-3 col-md-6 col-sm-6">
+                                <div class="p-3 bg-white border rounded shadow-sm">
+                                    <small class="text-muted d-block mb-2"><i class="bi bi-telephone me-1"></i>联系电话</small>
+                                    <h6 class="mb-0 text-dark font-monospace">{{ customer.phone }}</h6>
+                                </div>
+                            </div>
+                            <div class="col-lg-3 col-md-6 col-sm-6">
+                                <div class="p-3 bg-white border rounded shadow-sm">
+                                    <small class="text-muted d-block mb-2"><i class="bi bi-card-text me-1"></i>身份证</small>
+                                    <h6 class="mb-0 text-dark font-monospace" style="font-size: 0.85rem;">{{ customer.id_card }}</h6>
+                                </div>
+                            </div>
+                            <div class="col-lg-3 col-md-6 col-sm-6">
+                                <div class="p-3 bg-white border rounded shadow-sm">
+                                    <small class="text-muted d-block mb-2"><i class="bi bi-star me-1"></i>会员等级</small>
+                                    {% if customer.member_level == 'VIP' %}
+                                        <span class="badge bg-warning text-dark py-1" style="font-size: 0.8rem;"><i class="bi bi-star-fill me-1"></i>VIP</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary py-1" style="font-size: 0.8rem;">普通</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 租赁记录 -->
+                    <div class="mb-4">
+                        <h6 class="text-dark fw-bold mb-2"><i class="bi bi-clock-history me-2" style="color: #dc3545;"></i>租赁记录统计</h6>
+                        <div class="p-3 bg-danger bg-opacity-10 border-start border-danger border-5 rounded">
+                            <div class="row g-4 align-items-center">
+                                <div class="col-auto">
+                                    <h4 class="mb-0" style="color: #a11fcd;"><strong>{{ customer.rentals.count }}</strong></h4>
+                                </div>
+                                <div class="col-auto">
+                                    <span>条记录</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 确认删除表单 -->
+                    <form method="post" class="mt-4">
+                        {% csrf_token %}
+                        <div class="form-check p-3 bg-light border rounded mb-3">
+                            <input class="form-check-input" type="checkbox" id="confirmDelete" required>
+                            <label class="form-check-label" for="confirmDelete">
+                                我已理解丧失所有数据的颠覆性后果，确认删除客户 <strong>{{ customer.name }}</strong>
+                            </label>
+                        </div>
+
+                        <div class="d-flex justify-content-end gap-3">
+                            <a href="{% url 'customers:customer_detail' customer.pk %}" class="btn btn-outline-secondary px-4">
+                                <i class="bi bi-x-circle"></i> 取消
+                            </a>
+                            <button type="submit" class="btn btn-danger px-5" id="deleteBtn" disabled>
+                                <i class="bi bi-trash"></i> 确认删除
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const checkbox = document.getElementById('confirmDelete');
+    const deleteBtn = document.getElementById('deleteBtn');
+    
+    if (checkbox && deleteBtn) {
+        checkbox.addEventListener('change', function() {
+            deleteBtn.disabled = !this.checked;
+        });
+    }
+});
+</script>
+{% endblock %}

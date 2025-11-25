@@ -1,0 +1,268 @@
+{% extends "vehicles/base.html" %}
+
+{% block title %}车辆归还 - 租车管理系统{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>
+        <i class="bi bi-arrow-return-left me-2"></i>车辆归还处理
+    </h1>
+    <a href="{% url 'rentals:rental_detail' rental.id %}" class="btn btn-secondary">
+        <i class="bi bi-arrow-left"></i> 返回详情
+    </a>
+</div>
+
+<!-- 订单基本信息卡片 -->
+<div class="col-12 mb-4">
+    <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0"><i class="bi bi-info-circle me-2"></i>订单基本信息</h5>
+        </div>
+        <div class="card-body p-4">
+            <div class="row g-4">
+                <div class="col-lg-3 col-md-6">
+                    <div class="p-3 border rounded h-100">
+                        <div class="text-muted small mb-1"><i class="bi bi-receipt me-1"></i>订单号</div>
+                        <div class="fw-semibold">#{{ rental.id }}</div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-6">
+                    <div class="p-3 border rounded h-100">
+                        <div class="text-muted small mb-1"><i class="bi bi-person me-1"></i>客户姓名</div>
+                        <div class="fw-semibold">{{ rental.customer.name }}</div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-6">
+                    <div class="p-3 border rounded h-100">
+                        <div class="text-muted small mb-1"><i class="bi bi-telephone me-1"></i>联系电话</div>
+                        <div class="fw-semibold">{{ rental.customer.phone }}</div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-6">
+                    <div class="p-3 border rounded h-100">
+                        <div class="text-muted small mb-1"><i class="bi bi-star me-1"></i>会员等级</div>
+                        <div>
+                            <span class="badge {% if rental.customer.member_level == 'VIP' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">
+                                {{ rental.customer.get_member_level_display }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 车辆信息卡片 -->
+<div class="col-12 mb-4">
+    <div class="card shadow-sm">
+        <div class="card-header bg-info text-white">
+            <h5 class="mb-0"><i class="bi bi-car-front me-2"></i>车辆信息</h5>
+        </div>
+        <div class="card-body p-4">
+            <div class="row g-4">
+                <div class="col-lg-4 col-md-6">
+                    <div class="p-3 border rounded h-100">
+                        <div class="text-muted small mb-1"><i class="bi bi-car-front me-1"></i>车辆信息</div>
+                        <div class="fw-semibold">{{ rental.vehicle.brand }} {{ rental.vehicle.model }}</div>
+                    </div>
+                </div>
+                <div class="col-lg-4 col-md-6">
+                    <div class="p-3 border rounded h-100">
+                        <div class="text-muted small mb-1"><i class="bi bi-credit-card me-1"></i>车牌号</div>
+                        <div class="fw-semibold">{{ rental.vehicle.license_plate }}</div>
+                    </div>
+                </div>
+                <div class="col-lg-4 col-md-6">
+                    <div class="p-3 border rounded h-100">
+                        <div class="text-muted small mb-1"><i class="bi bi-cash me-1"></i>日租金</div>
+                        <div class="fw-semibold text-success">¥{{ rental.vehicle.daily_rate|floatformat:2 }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 租赁时间对比卡片 -->
+<div class="col-12 mb-4">
+    <div class="card shadow-sm">
+        <div class="card-header bg-success text-white">
+            <h5 class="mb-0"><i class="bi bi-calendar-event me-2"></i>租赁时间信息</h5>
+        </div>
+        <div class="card-body p-4">
+            <div class="row g-4">
+                <div class="col-md-6">
+                    <div class="card border">
+                        <div class="card-header bg-light">
+                            <h6 class="mb-0"><i class="bi bi-calendar-check me-2"></i>计划租赁信息</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row g-3">
+                                <div class="col-12">
+                                    <div class="p-2 border-bottom">
+                                        <div class="text-muted small mb-1"><i class="bi bi-calendar-plus me-1"></i>开始日期</div>
+                                        <div class="fw-semibold">{{ rental.start_date|date:"Y年m月d日" }}</div>
+                                    </div>
+                                </div>
+                                <div class="col-12">
+                                    <div class="p-2 border-bottom">
+                                        <div class="text-muted small mb-1"><i class="bi bi-calendar-x me-1"></i>结束日期</div>
+                                        <div class="fw-semibold">{{ rental.end_date|date:"Y年m月d日" }}</div>
+                                    </div>
+                                </div>
+                                <div class="col-12">
+                                    <div class="p-2">
+                                        <div class="text-muted small mb-1"><i class="bi bi-hourglass me-1"></i>计划天数</div>
+                                        <div class="fw-semibold">{{ rental.rental_days }}天</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card border">
+                        <div class="card-header bg-light">
+                            <h6 class="mb-0"><i class="bi bi-cash-stack me-2"></i>当前费用</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="text-center py-3">
+                                <div class="text-muted small mb-2">当前订单金额</div>
+                                <h3 class="text-success mb-3">¥{{ rental.total_amount|floatformat:2 }}</h3>
+                                <div class="alert alert-warning mb-0">
+                                    <small>
+                                        <i class="bi bi-exclamation-triangle me-1"></i>
+                                        还车时将根据实际还车日期重新计算
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 归还处理卡片 -->
+<div class="col-12 mb-4">
+    <div class="card shadow-sm">
+        <div class="card-header bg-warning text-dark">
+            <h5 class="mb-0"><i class="bi bi-arrow-return-left me-2"></i>归还处理</h5>
+        </div>
+        <div class="card-body p-4">
+            <form method="post">
+                {% csrf_token %}
+                <div class="mb-4">
+                    <label for="{{ form.actual_return_date.id_for_label }}" class="form-label fw-semibold">
+                        <i class="bi bi-calendar-event me-1"></i>{{ form.actual_return_date.label }}
+                        <span class="text-danger">*</span>
+                    </label>
+                    {{ form.actual_return_date }}
+                    {% if form.actual_return_date.errors %}
+                        <div class="text-danger small mt-1">
+                            {{ form.actual_return_date.errors.0 }}
+                        </div>
+                    {% endif %}
+                    <div class="form-text">
+                        还车日期不能晚于今天
+                    </div>
+                </div>
+                
+                <!-- 费用预览 -->
+                <div class="card border shadow-sm mb-4" id="cost-preview" style="display: none;">
+                    <div class="card-body bg-light">
+                        <h6 class="card-title fw-semibold"><i class="bi bi-calculator me-2"></i>费用预览</h6>
+                        <div id="cost-details"></div>
+                    </div>
+                </div>
+                
+                <div class="d-flex justify-content-end gap-3 pt-3 border-top">
+                    <a href="{% url 'rentals:rental_detail' rental.id %}" class="btn btn-outline-secondary px-4">
+                        <i class="bi bi-x-circle"></i> 取消
+                    </a>
+                    <button type="submit" class="btn btn-success px-5" onclick="return confirm('确认办理车辆归还？')">
+                        <i class="bi bi-check-circle"></i> 确认归还
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- 归还说明 -->
+<div class="col-12 mb-4">
+    <div class="alert alert-info border-0 shadow-sm">
+        <h6 class="alert-heading"><i class="bi bi-info-circle me-2"></i>温馨提示</h6>
+        <ul class="mb-0 ps-3">
+            <li>归还后车辆状态将更新为"可用"</li>
+            <li>超期还车将按正常日租金收费</li>
+            <li>订单状态将更新为"已完成"</li>
+            <li>请检查车辆状况并确认相关费用</li>
+        </ul>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+<script>
+$(document).ready(function() {
+    // 初始化计算
+    updateCostPreview();
+    
+    // 还车日期变化时重新计算
+    $('#id_actual_return_date').change(function() {
+        updateCostPreview();
+    });
+    
+    function updateCostPreview() {
+        const returnDate = new Date($('#id_actual_return_date').val());
+        const endDate = new Date('{{ rental.end_date|date:"Y-m-d" }}');
+        const startDate = new Date('{{ rental.start_date|date:"Y-m-d" }}');
+        const dailyRate = {{ rental.vehicle.daily_rate }};
+        const isVip = '{{ rental.customer.member_level }}' === 'VIP';
+        
+        if (returnDate && startDate && endDate) {
+            const baseDays = (endDate - startDate) / (1000 * 60 * 60 * 24) + 1;
+            const baseAmount = baseDays * dailyRate;
+            const discount = isVip ? baseAmount * 0.1 : 0;
+            const newAmount = baseAmount - discount;
+            
+            let extraDays = 0;
+            let extraAmount = 0;
+            let totalAmount = newAmount;
+            
+            if (returnDate > endDate) {
+                extraDays = (returnDate - endDate) / (1000 * 60 * 60 * 24);
+                extraAmount = extraDays * dailyRate;
+                totalAmount += extraAmount;
+            }
+            
+            let html = `
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>基础费用</h6>
+                        <p class="mb-1">计划天数: ${baseDays}天</p>
+                        <p class="mb-1">日租金: ¥${dailyRate.toFixed(2)}</p>
+                        <p class="mb-0">基础费用: ¥${baseAmount.toFixed(2)}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>优惠和额外费用</h6>
+                        ${isVip ? `<p class="mb-1 text-success">VIP折扣(10%): -¥${discount.toFixed(2)}</p>` : ''}
+                        <p class="mb-0">基础小计: ¥${newAmount.toFixed(2)}</p>
+                        ${extraDays > 0 ? `<hr><p class="mb-1">超期天数: ${extraDays}天</p><p class="mb-1">超期费用: +¥${extraAmount.toFixed(2)}</p>` : ''}
+                        <hr>
+                        <strong>最终费用: ¥${totalAmount.toFixed(2)}</strong>
+                    </div>
+                </div>
+            `;
+            
+            $('#cost-details').html(html);
+            $('#cost-preview').show();
+        }
+    }
+});
+</script>
+{% endblock %}

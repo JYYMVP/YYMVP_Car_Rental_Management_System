@@ -1,0 +1,55 @@
+{
+  "todos": {
+    "Coordinator": {
+      "1": {
+        "id": "1",
+        "content": "设计并创建Django项目结构",
+        "details": "1. 创建Django项目和应用\n2. 配置项目设置\n3. 设置SQLite数据库\n4. 创建基础的URL路由结构",
+        "status": "completed",
+        "priority": "high"
+      },
+      "2": {
+        "id": "2",
+        "content": "设计数据库模型",
+        "details": "1. 创建车辆模型（车牌号、品牌、型号、类型、颜色、日租金、状态）\n2. 创建客户模型（姓名、联系方式、身份证、驾照信息、会员等级）\n3. 创建租赁订单模型（客户、车辆、租赁时间、费用、状态）\n4. 定义模型关系和约束",
+        "status": "completed",
+        "priority": "high"
+      },
+      "3": {
+        "id": "3",
+        "content": "开发车辆管理功能",
+        "details": "1. 车辆信息录入功能\n2. 车辆状态管理（可用、已租、维修中）\n3. 车辆信息查询与筛选功能\n4. 车辆信息修改与删除功能\n5. 创建对应的视图和模板",
+        "status": "completed",
+        "priority": "high"
+      },
+      "4": {
+        "id": "4",
+        "content": "开发客户管理功能",
+        "details": "1. 客户信息登记功能\n2. 客户信息查询与维护功能\n3. 客户租赁历史记录显示\n4. 客户等级管理（普通会员、VIP会员）\n5. 创建对应的视图和模板",
+        "status": "completed",
+        "priority": "high"
+      },
+      "5": {
+        "id": "5",
+        "content": "开发租赁管理功能",
+        "details": "1. 创建租赁订单功能\n2. 订单状态跟踪（预订中、进行中、已完成、已取消）\n3. 租赁费用自动计算\n4. 订单信息修改与取消功能\n5. 创建对应的视图和模板",
+        "status": "completed",
+        "priority": "high"
+      },
+      "6": {
+        "id": "6",
+        "content": "创建管理界面和导航",
+        "details": "1. 设计系统主页面\n2. 创建导航菜单\n3. 创建管理员登录界面（可选）\n4. 统一界面风格和用户体验",
+        "status": "completed",
+        "priority": "medium"
+      },
+      "7": {
+        "id": "7",
+        "content": "系统测试和优化",
+        "details": "1. 功能测试（各个模块的基本功能）\n2. 数据完整性测试\n3. 界面优化和用户体验改进\n4. 部署到Django开发服务器",
+        "status": "completed",
+        "priority": "medium"
+      }
+    }
+  }
+}

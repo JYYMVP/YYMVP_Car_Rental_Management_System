@@ -1,0 +1,316 @@
+{% extends "base_user.html" %}
+{% load static %}
+
+{% block title %}创建订单 - 租车管理系统{% endblock %}
+
+{% block content %}
+<div class="profile-fullscreen">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="mb-1">
+                <i class="fas fa-handshake me-2"></i>创建租车订单
+            </h1>
+            <p class="text-muted mb-0">请填写订单信息</p>
+        </div>
+        <a href="{% url 'accounts:home' %}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i>返回车辆列表
+        </a>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-file-invoice me-2"></i>订单信息
+                    </h5>
+                </div>
+                <div class="card-body p-4">
+                    <form method="post" novalidate>
+                        {% csrf_token %}
+                        
+                        <!-- 客户信息（隐藏，自动填充） -->
+                        {% if form.customer %}
+                            <div class="mb-3" style="display: none;">
+                                {{ form.customer }}
+                            </div>
+                            <div class="alert alert-info mb-3">
+                                <i class="fas fa-user me-2"></i>
+                                <strong>客户：</strong>{{ customer.name }} ({{ customer.phone }})
+                            </div>
+                        {% endif %}
+                        
+                        <!-- 车辆信息 -->
+                        <div class="mb-4">
+                            <label for="{{ form.vehicle.id_for_label }}" class="form-label fw-semibold">
+                                {{ form.vehicle.label }} <span class="text-danger">*</span>
+                            </label>
+                            {{ form.vehicle }}
+                            {% if form.vehicle.errors %}
+                                <div class="text-danger small mt-1">
+                                    {{ form.vehicle.errors.0 }}
+                                </div>
+                            {% endif %}
+                            {% if form.vehicle.help_text %}
+                                <div class="form-text">{{ form.vehicle.help_text }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- 租赁日期 -->
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <label for="{{ form.start_date.id_for_label }}" class="form-label fw-semibold">
+                                    {{ form.start_date.label }} <span class="text-danger">*</span>
+                                </label>
+                                {{ form.start_date }}
+                                {% if form.start_date.errors %}
+                                    <div class="text-danger small mt-1">
+                                        {{ form.start_date.errors.0 }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label for="{{ form.end_date.id_for_label }}" class="form-label fw-semibold">
+                                    {{ form.end_date.label }} <span class="text-danger">*</span>
+                                </label>
+                                {{ form.end_date }}
+                                {% if form.end_date.errors %}
+                                    <div class="text-danger small mt-1">
+                                        {{ form.end_date.errors.0 }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <!-- 押金与异地还车费用由系统自动计算 -->
+                        <div class="mb-4">
+                            <div class="alert alert-info mb-0">
+                                <i class="fas fa-calculator me-2"></i>
+                                押金与异地还车费用将根据车辆日租金自动计算，无需手动填写。
+                            </div>
+                            <div style="display: none;">
+                                {{ form.deposit }}
+                                {{ form.cross_location_fee }}
+                            </div>
+                        </div>
+
+                        <!-- 取车地点 -->
+                        <div class="mb-4">
+                            <label for="{{ form.pickup_location.id_for_label }}" class="form-label fw-semibold">
+                                {{ form.pickup_location.label }} <span class="text-danger">*</span>
+                            </label>
+                            {{ form.pickup_location }}
+                            {% if form.pickup_location.errors %}
+                                <div class="text-danger small mt-1">
+                                    {{ form.pickup_location.errors.0 }}
+                                </div>
+                            {% endif %}
+                            {% if form.pickup_location.help_text %}
+                                <div class="form-text">{{ form.pickup_location.help_text }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- 异地还车 -->
+                        <div class="mb-4">
+                            <div class="form-check">
+                                {{ form.is_cross_location_return }}
+                                <label class="form-check-label" for="{{ form.is_cross_location_return.id_for_label }}">
+                                    {{ form.is_cross_location_return.label }}
+                                </label>
+                            </div>
+                            {% if form.is_cross_location_return.errors %}
+                                <div class="text-danger small mt-1">
+                                    {{ form.is_cross_location_return.errors.0 }}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- 还车地点（异地还车时显示） -->
+                        <div class="mb-4" id="return-location-group" style="display: none;">
+                            <label for="{{ form.return_location.id_for_label }}" class="form-label fw-semibold">
+                                {{ form.return_location.label }}
+                            </label>
+                            {{ form.return_location }}
+                            {% if form.return_location.errors %}
+                                <div class="text-danger small mt-1">
+                                    {{ form.return_location.errors.0 }}
+                                </div>
+                            {% endif %}
+                            {% if form.return_location.help_text %}
+                                <div class="form-text">{{ form.return_location.help_text }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- 订单状态（隐藏，自动设置为PENDING） -->
+                        {% if form.status %}
+                            <div style="display: none;">
+                                {{ form.status }}
+                            </div>
+                        {% endif %}
+                        
+                        <!-- 备注 -->
+                        <div class="mb-4">
+                            <label for="{{ form.notes.id_for_label }}" class="form-label fw-semibold">
+                                {{ form.notes.label }}
+                            </label>
+                            {{ form.notes }}
+                            {% if form.notes.errors %}
+                                <div class="text-danger small mt-1">
+                                    {{ form.notes.errors.0 }}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- 表单错误 -->
+                        {% if form.non_field_errors %}
+                            <div class="alert alert-danger">
+                                {% for error in form.non_field_errors %}
+                                    <div>{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                        
+                        <!-- 提交按钮 -->
+                        <div class="d-flex justify-content-end gap-3 mt-4 pt-3 border-top">
+                            <a href="{% url 'accounts:home' %}" class="btn btn-outline-secondary px-4">
+                                <i class="fas fa-times me-2"></i>取消
+                            </a>
+                            <button type="submit" class="btn btn-primary px-5">
+                                <i class="fas fa-check me-2"></i>提交订单
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 右侧信息栏 -->
+        <div class="col-lg-4">
+            <div class="card shadow mb-4">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-info-circle me-2"></i>订单说明
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled mb-0">
+                        <li class="mb-2">
+                            <i class="fas fa-calendar-check text-primary me-2"></i>
+                            <strong>开始日期：</strong>不能早于今天
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-calendar-times text-warning me-2"></i>
+                            <strong>结束日期：</strong>不能早于开始日期
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-car text-success me-2"></i>
+                            <strong>车辆状态：</strong>只能选择可用车辆
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-clock text-info me-2"></i>
+                            <strong>订单状态：</strong>创建后为"待确认"
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            
+            {% if customer %}
+            <div class="card shadow">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-user-check me-2"></i>客户信息
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-borderless mb-0">
+                        <tr>
+                            <th width="40%">姓名：</th>
+                            <td>{{ customer.name }}</td>
+                        </tr>
+                        <tr>
+                            <th>手机：</th>
+                            <td>{{ customer.phone }}</td>
+                        </tr>
+                        {% if customer.email %}
+                        <tr>
+                            <th>邮箱：</th>
+                            <td>{{ customer.email }}</td>
+                        </tr>
+                        {% endif %}
+                        <tr>
+                            <th>会员等级：</th>
+                            <td>
+                                {% if customer.member_level == 'VIP' %}
+                                    <span class="badge bg-warning">VIP会员</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">普通会员</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+    // 自动计算租赁天数
+    document.addEventListener('DOMContentLoaded', function() {
+        const startDateInput = document.getElementById('{{ form.start_date.id_for_label }}');
+        const endDateInput = document.getElementById('{{ form.end_date.id_for_label }}');
+        
+        function updateDays() {
+            if (startDateInput.value && endDateInput.value) {
+                const start = new Date(startDateInput.value);
+                const end = new Date(endDateInput.value);
+                const diffTime = Math.abs(end - start);
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+                
+                // 显示天数提示
+                let daysInfo = document.getElementById('days-info');
+                if (!daysInfo) {
+                    daysInfo = document.createElement('div');
+                    daysInfo.id = 'days-info';
+                    daysInfo.className = 'alert alert-info mt-2';
+                    endDateInput.parentElement.appendChild(daysInfo);
+                }
+                daysInfo.innerHTML = `<i class="fas fa-calendar-alt me-2"></i>租赁天数：<strong>${diffDays} 天</strong>`;
+            }
+        }
+        
+        if (startDateInput && endDateInput) {
+            startDateInput.addEventListener('change', updateDays);
+            endDateInput.addEventListener('change', updateDays);
+        }
+        
+        // 异地还车复选框控制
+        const crossLocationCheckbox = document.getElementById('{{ form.is_cross_location_return.id_for_label }}');
+        const returnLocationGroup = document.getElementById('return-location-group');
+        const crossLocationFeeGroup = document.getElementById('cross-location-fee-group');
+        
+        if (crossLocationCheckbox && returnLocationGroup) {
+            function toggleCrossLocationFields() {
+                if (crossLocationCheckbox.checked) {
+                    returnLocationGroup.style.display = 'block';
+                    if (crossLocationFeeGroup) {
+                        crossLocationFeeGroup.style.display = 'block';
+                    }
+                } else {
+                    returnLocationGroup.style.display = 'none';
+                    if (crossLocationFeeGroup) {
+                        crossLocationFeeGroup.style.display = 'none';
+                    }
+                }
+            }
+            
+            crossLocationCheckbox.addEventListener('change', toggleCrossLocationFields);
+            toggleCrossLocationFields(); // 初始化
+        }
+    });
+</script>
+{% endblock %}
+
+

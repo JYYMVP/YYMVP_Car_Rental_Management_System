@@ -1,0 +1,233 @@
+{% extends "vehicles/base.html" %}
+{% load static %}
+
+{% block title %}车辆管理 - 租车管理系统{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1><i class="fas fa-car me-2"></i>车辆管理</h1>
+    <a href="{% url 'vehicles:vehicle_create' %}" class="btn btn-primary">
+        <i class="fas fa-plus-circle me-1"></i>添加车辆
+    </a>
+</div>
+
+<!-- 搜索和筛选 -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0"><i class="fas fa-filter me-2"></i>搜索和筛选</h5>
+    </div>
+    <div class="card-body">
+        <form method="GET" class="row g-3">
+            <div class="col-md-4">
+                <label for="q" class="form-label">搜索</label>
+                <input type="text" class="form-control" id="q" name="q" 
+                       placeholder="车牌号、品牌、型号" value="{{ query }}">
+            </div>
+            <div class="col-md-2">
+                <label for="brand" class="form-label">品牌</label>
+                <select class="form-select" id="brand" name="brand">
+                    <option value="">全部品牌</option>
+                    {% for brand in brands %}
+                    <option value="{{ brand }}" {% if brand == brand_filter %}selected{% endif %}>
+                        {{ brand }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label for="type" class="form-label">类型</label>
+                <select class="form-select" id="type" name="type">
+                    <option value="">全部类型</option>
+                    {% for type in types %}
+                    <option value="{{ type }}" {% if type == type_filter %}selected{% endif %}>
+                        {{ type }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label for="seats" class="form-label">座位数</label>
+                <select class="form-select" id="seats" name="seats">
+                    <option value="">全部座位数</option>
+                    {% for seats in seats_options %}
+                    <option value="{{ seats }}" {% if seats_filter == seats|stringformat:"s" %}selected{% endif %}>
+                        {{ seats }}座
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label for="status" class="form-label">状态</label>
+                <select class="form-select" id="status" name="status">
+                    <option value="">全部状态</option>
+                    <option value="AVAILABLE" {% if status_filter == 'AVAILABLE' %}selected{% endif %}>可用</option>
+                    <option value="RENTED" {% if status_filter == 'RENTED' %}selected{% endif %}>已租</option>
+                    <option value="MAINTENANCE" {% if status_filter == 'MAINTENANCE' %}selected{% endif %}>维修中</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">&nbsp;</label>
+                <div class="d-grid">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-search me-1"></i>搜索
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- 车辆列表 -->
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">
+            <i class="fas fa-car me-2"></i>车辆列表
+            {% if query or brand_filter or type_filter or status_filter %}
+                <small class="text-muted">(已筛选)</small>
+            {% endif %}
+        </h5>
+    </div>
+    <div class="card-body p-0">
+        {% if vehicles %}
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>车牌号</th>
+                        <th>品牌型号</th>
+                        <th>类型</th>
+                        <th>座位数</th>
+                        <th>颜色</th>
+                        <th>日租金</th>
+                        <th>状态</th>
+                        <th>创建时间</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for vehicle in vehicles %}
+                    <tr>
+                        <td>
+                            <strong>{{ vehicle.license_plate }}</strong>
+                        </td>
+                        <td>
+                            <div>
+                                <strong>{{ vehicle.brand }}</strong>
+                                <br>
+                                <small class="text-muted">{{ vehicle.model }}</small>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="badge bg-secondary">{{ vehicle.vehicle_type }}</span>
+                        </td>
+                        <td>
+                            <span class="badge bg-info">{{ vehicle.seats }}座</span>
+                        </td>
+                        <td>{{ vehicle.color }}</td>
+                        <td>
+                            <span class="text-success fw-bold">¥{{ vehicle.daily_rate }}</span>
+                        </td>
+                        <td>
+                            {% if vehicle.status == 'AVAILABLE' %}
+                                <span class="badge bg-success status-available">
+                                    <i class="fas fa-check-circle me-1"></i>可用
+                                </span>
+                            {% elif vehicle.status == 'RENTED' %}
+                                <span class="badge bg-info status-rented">
+                                    <i class="fas fa-handshake me-1"></i>已租
+                                </span>
+                            {% else %}
+                                <span class="badge bg-warning status-maintenance">
+                                    <i class="fas fa-wrench me-1"></i>维修中
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <small class="text-muted">
+                                {{ vehicle.created_at|date:"Y-m-d H:i" }}
+                            </small>
+                        </td>
+                        <td>
+                            <div class="btn-group btn-group-sm" role="group">
+                                <a href="{% url 'vehicles:vehicle_detail' vehicle.pk %}" 
+                                   class="btn btn-outline-primary btn-action" title="查看详情">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                <a href="{% url 'vehicles:vehicle_update' vehicle.pk %}" 
+                                   class="btn btn-outline-secondary btn-action" title="编辑">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <a href="{% url 'vehicles:vehicle_delete' vehicle.pk %}" 
+                                   class="btn btn-outline-danger btn-action" title="删除"
+                                   data-confirm="确定要删除车辆 {{ vehicle.license_plate }} 吗？此操作无法撤销。">
+                                    <i class="fas fa-trash"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5">
+            <i class="fas fa-car" style="font-size: 3rem; color: #ccc;"></i>
+            <h5 class="text-muted mt-3">暂无车辆数据</h5>
+            <p class="text-muted">请添加车辆或调整搜索条件</p>
+            <a href="{% url 'vehicles:vehicle_create' %}" class="btn btn-primary">
+                <i class="fas fa-plus-circle me-1"></i>添加车辆
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- 分页 -->
+{% if vehicles.has_other_pages %}
+<nav aria-label="车辆列表分页" class="mt-4">
+    <ul class="pagination justify-content-center">
+        {% if vehicles.has_previous %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ vehicles.previous_page_number }}{% if query %}&q={{ query }}{% endif %}{% if brand_filter %}&brand={{ brand_filter }}{% endif %}{% if type_filter %}&type={{ type_filter }}{% endif %}{% if seats_filter %}&seats={{ seats_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}">
+                <i class="fas fa-chevron-left"></i> 上一页
+            </a>
+        </li>
+        {% else %}
+        <li class="page-item disabled">
+            <span class="page-link"><i class="fas fa-chevron-left"></i> 上一页</span>
+        </li>
+        {% endif %}
+
+        {% for page_num in vehicles.paginator.page_range %}
+        {% if page_num == vehicles.number %}
+        <li class="page-item active">
+            <span class="page-link">{{ page_num }}</span>
+        </li>
+        {% elif page_num > vehicles.number|add:'-3' and page_num < vehicles.number|add:'3' %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ page_num }}{% if query %}&q={{ query }}{% endif %}{% if brand_filter %}&brand={{ brand_filter }}{% endif %}{% if type_filter %}&type={{ type_filter }}{% endif %}{% if seats_filter %}&seats={{ seats_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}">
+                {{ page_num }}
+            </a>
+        </li>
+        {% endif %}
+        {% endfor %}
+
+        {% if vehicles.has_next %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ vehicles.next_page_number }}{% if query %}&q={{ query }}{% endif %}{% if brand_filter %}&brand={{ brand_filter }}{% endif %}{% if type_filter %}&type={{ type_filter }}{% endif %}{% if seats_filter %}&seats={{ seats_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}">
+                下一页 <i class="fas fa-chevron-right"></i>
+            </a>
+        </li>
+        {% else %}
+        <li class="page-item disabled">
+            <span class="page-link">下一页 <i class="fas fa-chevron-right"></i></span>
+        </li>
+        {% endif %}
+    </ul>
+</nav>
+
+<div class="text-center text-muted mt-2">
+    显示第 {{ vehicles.start_index }} - {{ vehicles.end_index }} 条，共 {{ vehicles.paginator.count }} 条记录
+</div>
+{% endif %}
+{% endblock %}

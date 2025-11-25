@@ -1,0 +1,274 @@
+{% extends "base_user.html" %}
+{% load static %}
+
+{% block title %}浏览车辆 - 租车管理系统{% endblock %}
+
+{% block content %}
+<div class="layout-stack">
+    <section class="hero-section">
+        <div class="hero-copy position-relative">
+            <div class="recommendation-badge mb-3 text-dark">
+                <i class="fas fa-briefcase me-2"></i>商务精选
+            </div>
+            <h1>让商务出行更体面</h1>
+            <p>我们提供经过严格筛选与保养的车辆、专属顾问与灵活的租赁方案，满足商务拜访、会议接驳、贵宾接待等多种场景，助你在每一次出行中保持从容。</p>
+            <ul class="list-unstyled hero-points mb-3">
+                <li><i class="fas fa-check-circle"></i>车辆按季度全面保养，保证交车状态稳定</li>
+                <li><i class="fas fa-check-circle"></i>商务团队一对一协助，快速响应行程调整</li>
+                <li><i class="fas fa-check-circle"></i>押金与异地费用自动化结算，账务清晰透明</li>
+            </ul>
+            <div class="hero-actions">
+                <a href="{% url 'accounts:order_create' %}" class="btn btn-accent">
+                    <i class="fas fa-calendar-check me-2"></i>立即预约
+                </a>
+                <a href="{% url 'accounts:my_orders' %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-receipt me-2"></i>查看订单
+                </a>
+            </div>
+        </div>
+        <div class="hero-panel">
+            <div class="d-flex align-center justify-between">
+                <h6 class="mb-0 text-muted">运营概览</h6>
+                <span class="filter-accent"><i class="fas fa-sync-alt"></i>实时刷新</span>
+            </div>
+            <div class="hero-meta">
+                <div class="hero-meta-card">
+                    <span class="hero-meta-label">可用车辆</span>
+                    <span class="hero-meta-value">{{ vehicle_stats.total }}</span>
+                </div>
+                <div class="hero-meta-card">
+                    <span class="hero-meta-label">平均日租金</span>
+                    <span class="hero-meta-value">¥{{ vehicle_stats.avg_rate|floatformat:0 }}</span>
+                </div>
+                <div class="hero-meta-card">
+                    <span class="hero-meta-label">座位配置</span>
+                    <span class="hero-meta-value">{{ vehicle_stats.seat_options }}</span>
+                </div>
+            </div>
+            <div class="divider"></div>
+            <div class="d-flex flex-wrap gap-2">
+                <span class="tag-pill"><i class="far fa-clock me-1"></i>30min备车</span>
+                <span class="tag-pill"><i class="far fa-shield-alt me-1"></i>专属顾问</span>
+                <span class="tag-pill"><i class="far fa-map me-1"></i>跨城返程</span>
+            </div>
+        </div>
+    </section>
+
+    <section class="section section--light">
+        <div class="section-header">
+            <div>
+                <div class="section-title"><i class="fas fa-chart-line me-2 text-primary"></i>车队洞察</div>
+                <p class="section-description">实时掌握可用车型、租金区间及热门配置，辅助商务团队快速决策。</p>
+            </div>
+            {% if popular_types %}
+            <div class="d-flex flex-wrap gap-2 justify-content-end">
+                {% for type in popular_types %}
+                    <span class="tag-pill"><i class="fas fa-check-circle text-success"></i>{{ type }}</span>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+        <div class="grid-3">
+            <div class="surface surface--soft">
+                <span class="label text-muted text-uppercase">可用车辆</span>
+                <h3 class="mb-1 text-primary">{{ vehicle_stats.total }}</h3>
+                <p class="mb-0 text-muted">严选保养、随时可用</p>
+            </div>
+            <div class="surface surface--soft">
+                <span class="label text-muted text-uppercase">平均日租金</span>
+                <h3 class="mb-1 text-primary">¥{{ vehicle_stats.avg_rate|floatformat:0 }}</h3>
+                <p class="mb-0 text-muted">含尊享服务套餐</p>
+            </div>
+            <div class="surface surface--soft">
+                <span class="label text-muted text-uppercase">座位配置</span>
+                <h3 class="mb-1 text-primary">{{ vehicle_stats.seat_options }}</h3>
+                <p class="mb-0 text-muted">覆盖主流商务布局</p>
+            </div>
+        </div>
+    </section>
+
+    {% if recommended_vehicles %}
+    <section class="section">
+        <div class="section-header">
+            <div>
+                <div class="section-title"><i class="fas fa-star text-warning me-2"></i>个性化推荐</div>
+                <p class="section-description">结合您的用车历史与热门趋势，为您匹配更合适的车型。</p>
+            </div>
+            <a href="{% url 'accounts:my_orders' %}" class="btn btn-outline-secondary"><i class="fas fa-clock me-2"></i>查看最近记录</a>
+        </div>
+        <div class="vehicle-grid">
+            {% for vehicle in recommended_vehicles %}
+            <div>
+                <div class="vehicle-card-pro recommended h-100">
+                    <div class="vehicle-card-header">
+                        <div>
+                            <div class="vehicle-title">{{ vehicle.brand }} {{ vehicle.model }}</div>
+                            <span class="tag-pill"><i class="fas fa-tag"></i>{{ vehicle.vehicle_type }}</span>
+                        </div>
+                        <div class="vehicle-price-badge">
+                            <div class="price-amount">¥{{ vehicle.daily_rate|floatformat:0 }}</div>
+                            <div class="price-unit">/天</div>
+                        </div>
+                    </div>
+                    <ul class="mb-3">
+                        <li><i class="fas fa-id-card"></i>{{ vehicle.license_plate }}</li>
+                        <li><i class="fas fa-chair"></i>{{ vehicle.seats }} 座</li>
+                        <li><i class="fas fa-palette"></i>{{ vehicle.color|default:"商务色" }}</li>
+                    </ul>
+                    <div class="vehicle-meta-line">
+                        <span><i class="far fa-clock me-1"></i>优先取车</span>
+                        <span><i class="far fa-shield-alt me-1"></i>专属保养</span>
+                    </div>
+                    <div class="vehicle-card-action">
+                        <a href="{% url 'accounts:vehicle_detail' vehicle.pk %}" class="btn btn-primary">
+                            <i class="fas fa-eye me-2"></i>查看详情
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+
+    <section class="section business-filters">
+        <div class="section-header border-0 mb-3 pb-0">
+            <div>
+                <div class="section-title"><i class="fas fa-filter text-primary me-2"></i>精确筛选</div>
+                <p class="section-description">输入需求即可快速锁定合适车型，支持多条件组合检索。</p>
+            </div>
+            <span class="filter-accent"><i class="fas fa-magic"></i>智能匹配 · 快速定位</span>
+        </div>
+        <form method="get" action="{% url 'accounts:home' %}" class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label">搜索车辆</label>
+                <input type="text" name="q" class="form-control" placeholder="车牌号、品牌、型号..." value="{{ search_query }}">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">品牌</label>
+                <select name="brand" class="form-select">
+                    <option value="">全部品牌</option>
+                    {% for brand in brands %}
+                        <option value="{{ brand }}" {% if brand_filter == brand %}selected{% endif %}>
+                            {{ brand }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">类型</label>
+                <select name="type" class="form-select">
+                    <option value="">全部类型</option>
+                    {% for type in types %}
+                        <option value="{{ type }}" {% if type_filter == type %}selected{% endif %}>
+                            {{ type }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">座位数</label>
+                <select name="seats" class="form-select">
+                    <option value="">全部座位数</option>
+                    {% for seats in seats_options %}
+                        <option value="{{ seats }}" {% if seats_filter == seats|stringformat:"s" %}selected{% endif %}>
+                            {{ seats }} 座
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-1 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="fas fa-search me-1"></i>搜索
+                </button>
+            </div>
+        </form>
+    </section>
+
+    {% if vehicles %}
+    <section class="section">
+        <div class="section-header">
+            <div>
+                <div class="section-title"><i class="fas fa-car-side text-primary me-2"></i>全部车辆</div>
+                <p class="section-description">覆盖商务轿车、MPV、行政级 SUV 等多种车型。</p>
+            </div>
+            <div class="text-muted">共 {{ vehicles.paginator.count }} 辆可预约</div>
+        </div>
+        <div class="vehicle-grid">
+            {% for vehicle in vehicles %}
+            <div>
+                <div class="vehicle-card-pro h-100">
+                    <div class="vehicle-card-header">
+                        <div>
+                            <div class="vehicle-title">{{ vehicle.brand }} {{ vehicle.model }}</div>
+                            <span class="tag-pill"><i class="fas fa-tag"></i>{{ vehicle.vehicle_type }}</span>
+                        </div>
+                        <div class="vehicle-price-badge">
+                            <div class="price-amount">¥{{ vehicle.daily_rate|floatformat:0 }}</div>
+                            <div class="price-unit">/天</div>
+                        </div>
+                    </div>
+                    <ul class="mb-3">
+                        <li><i class="fas fa-id-card"></i>{{ vehicle.license_plate }}</li>
+                        <li><i class="fas fa-chair"></i>{{ vehicle.seats }} 座</li>
+                        <li><i class="fas fa-fill-drip"></i>{{ vehicle.color }}</li>
+                    </ul>
+                    <div class="vehicle-meta-line">
+                        <span><i class="far fa-clock me-1"></i>随时可用</span>
+                        <span><i class="far fa-user-shield me-1"></i>专属礼宾</span>
+                    </div>
+                    <div class="vehicle-card-action">
+                        <a href="{% url 'accounts:vehicle_detail' vehicle.pk %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-eye me-2"></i>查看详情
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        {% if vehicles.has_other_pages %}
+        <nav aria-label="车辆分页" class="mt-4">
+            <ul class="pagination justify-content-center">
+                {% if vehicles.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ vehicles.previous_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}{% if brand_filter %}&brand={{ brand_filter }}{% endif %}{% if type_filter %}&type={{ type_filter }}{% endif %}{% if seats_filter %}&seats={{ seats_filter }}{% endif %}">
+                            上一页
+                        </a>
+                    </li>
+                {% endif %}
+                {% for num in vehicles.paginator.page_range %}
+                    {% if vehicles.number == num %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ num }}</span>
+                        </li>
+                    {% elif num > vehicles.number|add:'-3' and num < vehicles.number|add:'3' %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ num }}{% if search_query %}&q={{ search_query }}{% endif %}{% if brand_filter %}&brand={{ brand_filter }}{% endif %}{% if type_filter %}&type={{ type_filter }}{% endif %}{% if seats_filter %}&seats={{ seats_filter }}{% endif %}">
+                                {{ num }}
+                            </a>
+                        </li>
+                    {% endif %}
+                {% endfor %}
+                {% if vehicles.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ vehicles.next_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}{% if brand_filter %}&brand={{ brand_filter }}{% endif %}{% if type_filter %}&type={{ type_filter }}{% endif %}{% if seats_filter %}&seats={{ seats_filter }}{% endif %}">
+                            下一页
+                        </a>
+                    </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+    </section>
+    {% else %}
+    <section class="section text-center">
+        <i class="fas fa-car fa-3x text-muted mb-3"></i>
+        <h4 class="text-muted">暂无可用车辆</h4>
+        <p class="text-muted">请稍后再来查看或联系您的专属顾问</p>
+    </section>
+    {% endif %}
+</div>
+{% endblock %}
+
+

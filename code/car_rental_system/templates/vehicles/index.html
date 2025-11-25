@@ -1,0 +1,250 @@
+{% extends "vehicles/base.html" %}
+
+{% block title %}车辆管理首页 - 租车管理系统{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1><i class="bi bi-speedometer2"></i> 车辆管理仪表板</h1>
+    <a href="{% url 'vehicles:vehicle_create' %}" class="btn btn-primary">
+        <i class="bi bi-plus-circle"></i> 添加车辆
+    </a>
+</div>
+
+<!-- 统计卡片 -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card text-center border-primary">
+            <div class="card-body">
+                <i class="bi bi-car-front text-primary" style="font-size: 2rem;"></i>
+                <h3 class="mt-2 text-primary">{{ total_vehicles }}</h3>
+                <p class="text-muted mb-0">车辆总数</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center border-success">
+            <div class="card-body">
+                <i class="bi bi-check-circle text-success" style="font-size: 2rem;"></i>
+                <h3 class="mt-2 text-success">{{ available_vehicles }}</h3>
+                <p class="text-muted mb-0">可用车辆</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center border-danger">
+            <div class="card-body">
+                <i class="bi bi-x-circle text-danger" style="font-size: 2rem;"></i>
+                <h3 class="mt-2 text-danger">{{ rented_vehicles }}</h3>
+                <p class="text-muted mb-0">已租车辆</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center border-warning">
+            <div class="card-body">
+                <i class="bi bi-tools text-warning" style="font-size: 2rem;"></i>
+                <h3 class="mt-2 text-warning">{{ maintenance_vehicles }}</h3>
+                <p class="text-muted mb-0">维修中</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- 最近添加的车辆 -->
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="bi bi-clock-history"></i> 最近添加的车辆
+                </h5>
+                <a href="{% url 'vehicles:vehicle_list' %}" class="btn btn-sm btn-outline-primary">
+                    查看全部 <i class="bi bi-arrow-right"></i>
+                </a>
+            </div>
+            <div class="card-body p-0">
+                {% if recent_vehicles %}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>车牌号</th>
+                                <th>品牌型号</th>
+                                <th>类型</th>
+                                <th>状态</th>
+                                <th>日租金</th>
+                                <th>添加时间</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for vehicle in recent_vehicles %}
+                            <tr>
+                                <td>
+                                    <strong>{{ vehicle.license_plate }}</strong>
+                                </td>
+                                <td>
+                                    <div>
+                                        <strong>{{ vehicle.brand }}</strong>
+                                        <br>
+                                        <small class="text-muted">{{ vehicle.model }}</small>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="badge bg-secondary">{{ vehicle.vehicle_type }}</span>
+                                </td>
+                                <td>
+                                    {% if vehicle.status == 'AVAILABLE' %}
+                                        <span class="badge bg-success">可用</span>
+                                    {% elif vehicle.status == 'RENTED' %}
+                                        <span class="badge bg-danger">已租</span>
+                                    {% else %}
+                                        <span class="badge bg-warning">维修中</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span class="text-success fw-bold">¥{{ vehicle.daily_rate }}</span>
+                                </td>
+                                <td>
+                                    <small class="text-muted">
+                                        {{ vehicle.created_at|date:"m-d H:i" }}
+                                    </small>
+                                </td>
+                                <td>
+                                    <a href="{% url 'vehicles:vehicle_detail' vehicle.pk %}" 
+                                       class="btn btn-sm btn-outline-primary">
+                                        <i class="bi bi-eye"></i> 查看
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="bi bi-car-front" style="font-size: 3rem; color: #ccc;"></i>
+                    <h5 class="text-muted mt-3">暂无车辆数据</h5>
+                    <p class="text-muted">开始添加您的第一辆车</p>
+                    <a href="{% url 'vehicles:vehicle_create' %}" class="btn btn-primary">
+                        <i class="bi bi-plus-circle"></i> 添加车辆
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- 快速操作 -->
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-lightning"></i> 快速操作
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{% url 'vehicles:vehicle_create' %}" class="btn btn-primary">
+                        <i class="bi bi-plus-circle"></i> 添加新车辆
+                    </a>
+                    <a href="{% url 'vehicles:vehicle_list' %}" class="btn btn-outline-primary">
+                        <i class="bi bi-list-ul"></i> 查看所有车辆
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- 状态分布 -->
+        <div class="card mt-3">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-pie-chart"></i> 车辆状态分布
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if total_vehicles > 0 %}
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <small class="text-success">可用</small>
+                        <small class="text-muted">{{ available_vehicles }} 辆</small>
+                    </div>
+                    <div class="progress" style="height: 8px;">
+                        <div class="progress-bar bg-success" 
+                             style="width: {% widthratio available_vehicles total_vehicles 100 %}%"></div>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <small class="text-danger">已租</small>
+                        <small class="text-muted">{{ rented_vehicles }} 辆</small>
+                    </div>
+                    <div class="progress" style="height: 8px;">
+                        <div class="progress-bar bg-danger" 
+                             style="width: {% widthratio rented_vehicles total_vehicles 100 %}%"></div>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <small class="text-warning">维修中</small>
+                        <small class="text-muted">{{ maintenance_vehicles }} 辆</small>
+                    </div>
+                    <div class="progress" style="height: 8px;">
+                        <div class="progress-bar bg-warning" 
+                             style="width: {% widthratio maintenance_vehicles total_vehicles 100 %}%"></div>
+                    </div>
+                </div>
+                
+                <div class="text-center">
+                    <small class="text-muted">总计：{{ total_vehicles }} 辆</small>
+                </div>
+                {% else %}
+                <div class="text-center py-3">
+                    <i class="bi bi-pie-chart text-muted" style="font-size: 2rem;"></i>
+                    <p class="text-muted mt-2">暂无数据</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- 系统信息 -->
+        <div class="card mt-3">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-info-circle"></i> 系统信息
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-6">
+                        <div class="border rounded p-2">
+                            <div class="h6 mb-1">车辆利用率</div>
+                            {% if total_vehicles > 0 %}
+                            <div class="text-success fw-bold">
+                                {% widthratio rented_vehicles total_vehicles 100 %}%
+                            </div>
+                            {% else %}
+                            <div class="text-muted">--</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="border rounded p-2">
+                            <div class="h6 mb-1">可用率</div>
+                            {% if total_vehicles > 0 %}
+                            <div class="text-primary fw-bold">
+                                {% widthratio available_vehicles total_vehicles 100 %}%
+                            </div>
+                            {% else %}
+                            <div class="text-muted">--</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,336 @@
+{% extends "vehicles/base.html" %}
+
+{% block title %}{{ title }} - 租车管理系统{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>
+        <i class="bi bi-{% if rental %}pencil{% else %}plus-circle{% endif %} me-2"></i>{{ title }}
+    </h1>
+    <a href="{% url 'rentals:rental_list' %}" class="btn btn-secondary">
+        <i class="bi bi-arrow-left"></i> 返回列表
+    </a>
+</div>
+
+<form method="post" id="rental-form">
+    {% csrf_token %}
+    
+    <!-- 订单基础信息卡片 -->
+    <div class="col-12 mb-4">
+        <div class="card shadow-sm">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-info-circle me-2"></i>订单基础信息</h5>
+            </div>
+            <div class="card-body p-4">
+                <div class="row g-4">
+                    <div class="col-lg-6 col-md-6">
+                        <label for="{{ form.customer.id_for_label }}" class="form-label fw-semibold">
+                            <i class="bi bi-person me-1"></i>{{ form.customer.label }}
+                            {% if form.customer.field.required %}<span class="text-danger">*</span>{% endif %}
+                        </label>
+                        {{ form.customer }}
+                        {% if form.customer.errors %}
+                            <div class="text-danger small mt-1">
+                                {{ form.customer.errors.0 }}
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="col-lg-6 col-md-6">
+                        <label for="{{ form.vehicle.id_for_label }}" class="form-label fw-semibold">
+                            <i class="bi bi-car-front me-1"></i>{{ form.vehicle.label }}
+                            {% if form.vehicle.field.required %}<span class="text-danger">*</span>{% endif %}
+                        </label>
+                        {{ form.vehicle }}
+                        {% if form.vehicle.errors %}
+                            <div class="text-danger small mt-1">
+                                {{ form.vehicle.errors.0 }}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 租赁时间信息卡片 -->
+    <div class="col-12 mb-4">
+        <div class="card shadow-sm">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="bi bi-calendar-event me-2"></i>租赁时间信息</h5>
+            </div>
+            <div class="card-body p-4">
+                <div class="row g-4">
+                    <div class="col-lg-6 col-md-6">
+                        <label for="{{ form.start_date.id_for_label }}" class="form-label fw-semibold">
+                            <i class="bi bi-calendar-plus me-1"></i>{{ form.start_date.label }}
+                            {% if form.start_date.field.required %}<span class="text-danger">*</span>{% endif %}
+                        </label>
+                        {{ form.start_date }}
+                        {% if form.start_date.errors %}
+                            <div class="text-danger small mt-1">
+                                {{ form.start_date.errors.0 }}
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="col-lg-6 col-md-6">
+                        <label for="{{ form.end_date.id_for_label }}" class="form-label fw-semibold">
+                            <i class="bi bi-calendar-check me-1"></i>{{ form.end_date.label }}
+                            {% if form.end_date.field.required %}<span class="text-danger">*</span>{% endif %}
+                        </label>
+                        {{ form.end_date }}
+                        {% if form.end_date.errors %}
+                            <div class="text-danger small mt-1">
+                                {{ form.end_date.errors.0 }}
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="col-lg-6 col-md-6">
+                        <label for="{{ form.status.id_for_label }}" class="form-label fw-semibold">
+                            <i class="bi bi-flag me-1"></i>{{ form.status.label }}
+                            {% if form.status.field.required %}<span class="text-danger">*</span>{% endif %}
+                        </label>
+                        {{ form.status }}
+                        {% if form.status.errors %}
+                            <div class="text-danger small mt-1">
+                                {{ form.status.errors.0 }}
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="col-lg-6 col-md-6">
+                        <label for="{{ form.notes.id_for_label }}" class="form-label fw-semibold">
+                            <i class="bi bi-sticky me-1"></i>{{ form.notes.label }}
+                        </label>
+                        {{ form.notes }}
+                        {% if form.notes.errors %}
+                            <div class="text-danger small mt-1">
+                                {{ form.notes.errors.0 }}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 费用预览卡片 -->
+    <div class="col-12 mb-4">
+        <div class="card shadow-sm">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0"><i class="bi bi-calculator me-2"></i>费用预览</h5>
+            </div>
+            <div class="card-body p-4">
+                <div id="cost-display">
+                    <div class="text-center text-muted py-3">
+                        <i class="bi bi-info-circle fs-1 mb-3 d-block"></i>
+                        <p>请选择客户和车辆，填写租赁时间查看费用详情</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 填写说明卡片 -->
+    <div class="col-12 mb-4">
+        <div class="card shadow-sm">
+            <div class="card-header bg-secondary text-white">
+                <h5 class="mb-0"><i class="bi bi-info-circle me-2"></i>填写说明</h5>
+            </div>
+            <div class="card-body p-4">
+                <div class="row g-4">
+                    <div class="col-lg-4 col-md-6">
+                        <div class="p-3 border rounded h-100">
+                            <div class="text-muted small mb-1"><i class="bi bi-calendar-check me-1"></i>租赁日期</div>
+                            <ul class="small mb-0 ps-3">
+                                <li>开始日期不能早于今天</li>
+                                <li>结束日期必须晚于开始日期</li>
+                                <li>系统将自动计算租赁天数</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="col-lg-4 col-md-6">
+                        <div class="p-3 border rounded h-100">
+                            <div class="text-muted small mb-1"><i class="bi bi-car-front me-1"></i>车辆选择</div>
+                            <ul class="small mb-0 ps-3">
+                                <li>只能选择可用状态的车辆</li>
+                                <li>系统会自动检查冲突</li>
+                                <li>显示车辆日租金信息</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="col-lg-4 col-md-6">
+                        <div class="p-3 border rounded h-100">
+                            <div class="text-muted small mb-1"><i class="bi bi-star me-1"></i>VIP优惠</div>
+                            <ul class="small mb-0 ps-3">
+                                <li>VIP会员享受10%折扣</li>
+                                <li>超期还车按正常日租金收费</li>
+                                <li>订单状态可后续调整</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 提交按钮 -->
+    <div class="col-12 mb-4">
+        <div class="d-flex justify-content-end gap-3 pt-3 border-top">
+            <a href="{% url 'rentals:rental_list' %}" class="btn btn-outline-secondary px-4">
+                <i class="bi bi-x-circle"></i> 取消
+            </a>
+            <button type="submit" class="btn btn-primary px-5">
+                <i class="bi bi-{% if rental %}save{% else %}check-circle{% endif %}"></i>
+                {% if rental %}保存修改{% else %}创建订单{% endif %}
+            </button>
+        </div>
+    </div>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+<script>
+$(document).ready(function() {
+    // 车辆选择变化时检查可用性
+    $('#id_vehicle').change(function() {
+        const vehicleId = $(this).val();
+        if (vehicleId) {
+            $.get('{% url "rentals:vehicle_available_dates" %}', {
+                vehicle_id: vehicleId
+            }, function(data) {
+                if (!data.is_available) {
+                    alert('警告：该车辆当前不可用！');
+                }
+                if (data.busy_dates && data.busy_dates.length > 0) {
+                    console.log('忙碌日期:', data.busy_dates);
+                }
+            });
+        }
+        updateCostPreview();
+    });
+    
+    // 客户选择变化时更新费用
+    $('#id_customer').change(function() {
+        updateCostPreview();
+    });
+    
+    // 日期变化时更新费用
+    $('#id_start_date, #id_end_date').change(function() {
+        updateCostPreview();
+    });
+    
+    // 费用预览函数
+    function updateCostPreview() {
+        const customerId = $('#id_customer').val();
+        const vehicleId = $('#id_vehicle').val();
+        const startDate = $('#id_start_date').val();
+        const endDate = $('#id_end_date').val();
+        
+        if (!customerId || !vehicleId || !startDate || !endDate) {
+            return;
+        }
+        
+        // 获取车辆日租金
+        const vehicleOption = $('#id_vehicle option:selected');
+        const vehicleText = vehicleOption.text();
+        const dailyRateMatch = vehicleText.match(/￥([0-9.]+)/);
+        
+        if (!dailyRateMatch) {
+            return;
+        }
+        
+        const dailyRate = parseFloat(dailyRateMatch[1]);
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+        const days = Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
+        
+        if (days <= 0) {
+            return;
+        }
+        
+        // 计算费用
+        const baseAmount = days * dailyRate;
+        const customerOption = $('#id_customer option:selected');
+        const isVip = customerOption.text().includes('VIP');
+        const discount = isVip ? baseAmount * 0.1 : 0;
+        const totalAmount = baseAmount - discount;
+        
+        // 显示费用预览
+        let html = `
+            <div class="row g-4">
+                <div class="col-lg-3 col-md-6">
+                    <div class="p-3 border rounded h-100 text-center">
+                        <div class="text-muted small mb-2"><i class="bi bi-calendar-range me-1"></i>租赁天数</div>
+                        <h3 class="text-primary mb-0">${days}</h3>
+                        <small class="text-muted">天</small>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-6">
+                    <div class="p-3 border rounded h-100 text-center">
+                        <div class="text-muted small mb-2"><i class="bi bi-cash me-1"></i>日租金</div>
+                        <h3 class="text-success mb-0">￥${dailyRate.toFixed(2)}</h3>
+                        <small class="text-muted">每天</small>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-6">
+                    <div class="p-3 border rounded h-100 text-center">
+                        <div class="text-muted small mb-2"><i class="bi bi-cash-stack me-1"></i>基础费用</div>
+                        <h3 class="text-info mb-0">￥${baseAmount.toFixed(2)}</h3>
+                        <small class="text-muted">小计</small>
+                    </div>
+                </div>
+                ${isVip ? `
+                <div class="col-lg-3 col-md-6">
+                    <div class="p-3 border rounded h-100 text-center bg-success bg-opacity-10">
+                        <div class="text-muted small mb-2"><i class="bi bi-piggy-bank me-1"></i>VIP折扣</div>
+                        <h3 class="text-success mb-0">-￥${discount.toFixed(2)}</h3>
+                        <small class="text-muted">10%优惠</small>
+                    </div>
+                </div>
+                ` : ''}
+            </div>
+            <div class="row g-4 mt-2">
+                <div class="col-12">
+                    <div class="p-4 bg-light border-start border-primary border-5 rounded">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0 text-primary"><i class="bi bi-currency-dollar me-2"></i>订单总金额</h5>
+                            <h2 class="mb-0 text-primary"><strong>￥${totalAmount.toFixed(2)}</strong></h2>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        $('#cost-display').html(html);
+    }
+    
+    // 表单提交验证
+    $('#rental-form').submit(function(e) {
+        const startDate = new Date($('#id_start_date').val());
+        const endDate = new Date($('#id_end_date').val());
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        if (startDate < today) {
+            e.preventDefault();
+            alert('错误：开始日期不能早于今天！');
+            return false;
+        }
+        
+        if (endDate < startDate) {
+            e.preventDefault();
+            alert('错误：结束日期不能早于开始日期！');
+            return false;
+        }
+        
+        if (!confirm('确认提交此订单？')) {
+            e.preventDefault();
+            return false;
+        }
+    });
+    
+    // 初始化费用预览
+    updateCostPreview();
+});
+</script>
+{% endblock %}

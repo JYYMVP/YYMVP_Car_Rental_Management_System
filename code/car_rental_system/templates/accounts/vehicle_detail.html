@@ -1,0 +1,123 @@
+{% extends "base_user.html" %}
+{% load static %}
+
+{% block title %}{{ vehicle.brand }} {{ vehicle.model }} - 租车管理系统{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <a href="{% url 'accounts:home' %}" class="btn btn-outline-secondary mb-3">
+        <i class="fas fa-arrow-left me-2"></i>返回车辆列表
+    </a>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card shadow mb-4">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">
+                    <i class="fas fa-car me-2"></i>{{ vehicle.brand }} {{ vehicle.model }}
+                </h4>
+            </div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <table class="table table-borderless">
+                            <tr>
+                                <th width="40%">车牌号：</th>
+                                <td><strong>{{ vehicle.license_plate }}</strong></td>
+                            </tr>
+                            <tr>
+                                <th>品牌：</th>
+                                <td>{{ vehicle.brand }}</td>
+                            </tr>
+                            <tr>
+                                <th>型号：</th>
+                                <td>{{ vehicle.model }}</td>
+                            </tr>
+                            <tr>
+                                <th>类型：</th>
+                                <td>{{ vehicle.vehicle_type }}</td>
+                            </tr>
+                            <tr>
+                                <th>颜色：</th>
+                                <td>{{ vehicle.color }}</td>
+                            </tr>
+                            <tr>
+                                <th>座位数：</th>
+                                <td><span class="badge bg-info">{{ vehicle.seats }}座</span></td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="text-center">
+                            <div class="pricing-box p-4 bg-light rounded">
+                                <h3 class="text-primary mb-0">¥{{ vehicle.daily_rate|floatformat:2 }}</h3>
+                                <p class="text-muted mb-0">日租金</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <strong>状态：</strong>
+                    {% if vehicle.status == 'AVAILABLE' %}
+                        <span class="badge bg-success">可用</span> - 该车辆目前可以租用
+                    {% elif vehicle.status == 'RENTED' %}
+                        <span class="badge bg-warning">已租</span> - 该车辆已被租出
+                    {% elif vehicle.status == 'MAINTENANCE' %}
+                        <span class="badge bg-secondary">维修中</span> - 该车辆正在维修
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card shadow mb-4">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="fas fa-calendar-check me-2"></i>租车</h5>
+            </div>
+            <div class="card-body">
+                {% if vehicle.status == 'AVAILABLE' %}
+                    {% if user.is_authenticated %}
+                        {% if can_rent %}
+                            <p class="mb-3">您已可以租用此车辆，点击下方按钮创建订单。</p>
+                            <a href="{% url 'accounts:order_create' %}?vehicle={{ vehicle.id }}" 
+                               class="btn btn-primary w-100 mb-2">
+                                <i class="fas fa-handshake me-2"></i>立即租车
+                            </a>
+                        {% else %}
+                            <div class="alert alert-warning">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                您需要先完善客户信息才能租车。
+                            </div>
+                            <a href="{% url 'accounts:customer_info' %}" 
+                               class="btn btn-outline-primary w-100">
+                                <i class="fas fa-user-plus me-2"></i>完善客户信息
+                            </a>
+                        {% endif %}
+                    {% else %}
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            请先登录才能租车
+                        </div>
+                        <a href="{% url 'accounts:login' %}" class="btn btn-primary w-100 mb-2">
+                            <i class="fas fa-sign-in-alt me-2"></i>登录
+                        </a>
+                        <a href="{% url 'accounts:register' %}" class="btn btn-outline-primary w-100">
+                            <i class="fas fa-user-plus me-2"></i>注册
+                        </a>
+                    {% endif %}
+                {% else %}
+                    <div class="alert alert-secondary">
+                        <i class="fas fa-ban me-2"></i>
+                        该车辆暂时无法租用
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

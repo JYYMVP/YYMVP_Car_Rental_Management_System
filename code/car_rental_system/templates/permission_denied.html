@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block title %}权限不足 - 租车管理系统{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-6 text-center">
+            <div class="error-template">
+                <h1>
+                    <i class="fas fa-lock text-warning" style="font-size: 6rem;"></i>
+                </h1>
+                <h1>403</h1>
+                <div class="error-details mt-3">
+                    抱歉，您没有权限访问此页面！
+                </div>
+                <div class="error-actions mt-4">
+                    <a href="{% url 'dashboard' %}" class="btn btn-primary btn-lg me-3">
+                        <i class="fas fa-home me-2"></i>返回主页
+                    </a>
+                    <a href="/admin/" class="btn btn-warning btn-lg">
+                        <i class="fas fa-cog me-2"></i>管理后台
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

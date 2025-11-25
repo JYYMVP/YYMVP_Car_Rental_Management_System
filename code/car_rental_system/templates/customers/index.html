@@ -1,0 +1,144 @@
+{% extends "vehicles/base.html" %}
+
+{% block title %}客户管理 - 租车管理系统{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1><i class="bi bi-people"></i> 客户管理</h1>
+    <a href="{% url 'customers:customer_create' %}" class="btn btn-primary">
+        <i class="bi bi-person-plus"></i> 添加客户
+    </a>
+</div>
+
+<!-- 统计卡片 -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h3 class="text-primary">{{ customer_count }}</h3>
+                <p class="text-muted mb-0">总客户数</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h3 class="text-warning">{{ vip_count }}</h3>
+                <p class="text-muted mb-0">VIP会员</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h3 class="text-info">{{ normal_count }}</h3>
+                <p class="text-muted mb-0">普通会员</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h3 class="text-success">{{ vip_count|add:normal_count|default:0 }}</h3>
+                <p class="text-muted mb-0">活跃客户</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 快捷操作 -->
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-list-check"></i> 快捷操作</h5>
+            </div>
+            <div class="card-body">
+                <div class="list-group list-group-flush">
+                    <a href="{% url 'customers:customer_list' %}" class="list-group-item list-group-item-action">
+                        <i class="bi bi-people-fill text-primary"></i> 查看所有客户
+                    </a>
+                    <a href="{% url 'customers:customer_list' %}?member_level=VIP" class="list-group-item list-group-item-action">
+                        <i class="bi bi-star-fill text-warning"></i> VIP会员管理
+                    </a>
+                    <a href="{% url 'customers:customer_create' %}" class="list-group-item list-group-item-action">
+                        <i class="bi bi-person-plus-fill text-success"></i> 添加新客户
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-clock-history"></i> 最近添加的客户</h5>
+            </div>
+            <div class="card-body">
+                {% if recent_customers %}
+                    <div class="list-group list-group-flush">
+                        {% for customer in recent_customers %}
+                        <a href="{% url 'customers:customer_detail' customer.pk %}" class="list-group-item list-group-item-action">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="mb-1">{{ customer.name }}</h6>
+                                    <small class="text-muted">{{ customer.phone }}</small>
+                                </div>
+                                <div>
+                                    {% if customer.member_level == 'VIP' %}
+                                        <span class="badge bg-warning">VIP</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">普通</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </a>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-muted text-center">暂无客户数据</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 客户管理功能说明 -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-info-circle"></i> 功能说明</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <h6>客户信息管理</h6>
+                        <ul class="small">
+                            <li>客户基本信息录入</li>
+                            <li>手机号、身份证验证</li>
+                            <li>会员等级管理</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-4">
+                        <h6>租赁历史记录</h6>
+                        <ul class="small">
+                            <li>查看所有租赁记录</li>
+                            <li>统计总租赁次数和金额</li>
+                            <li>按状态筛选订单</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-4">
+                        <h6>VIP会员服务</h6>
+                        <ul class="small">
+                            <li>VIP会员享受9折优惠</li>
+                            <li>快速等级升级</li>
+                            <li>优先客服支持</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

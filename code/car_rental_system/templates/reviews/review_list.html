@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}评价管理 - 租车管理系统{% endblock %}
+
+{% block content %}
+<div class="profile-fullscreen">
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+        <div>
+            <h1 class="mb-1">
+                <i class="fas fa-comments me-2 text-primary"></i>评价管理
+            </h1>
+            <p class="text-muted mb-0">查看并管理所有用户对订单/车辆的评价</p>
+        </div>
+    </div>
+
+    <div class="card shadow mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3 align-items-end">
+                <div class="col-md-6">
+                    <label class="form-label">搜索</label>
+                    <input type="text" name="q" value="{{ query }}" class="form-control" placeholder="按订单号、用户或车辆搜索">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">评分</label>
+                    <select name="rating" class="form-select">
+                        <option value="">全部评分</option>
+                        {% for value,label in rating_choices %}
+                            <option value="{{ value }}" {% if rating == value|stringformat:'s' %}selected{% endif %}>
+                                {{ label }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary flex-fill">
+                        <i class="fas fa-search me-1"></i>筛选
+                    </button>
+                    <a href="{% url 'review_list' %}" class="btn btn-outline-secondary">
+                        重置
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card shadow">
+        <div class="card-body p-0">
+            {% if page_obj %}
+            <div class="table-responsive">
+                <table class="table table-hover mb-0 align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>订单</th>
+                            <th>车辆</th>
+                            <th>用户</th>
+                            <th>评分</th>
+                            <th>评价内容</th>
+                            <th>时间</th>
+                            <th class="text-end">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for review in page_obj %}
+                        <tr>
+                            <td>
+                                <span class="badge bg-secondary">#{{ review.rental.id }}</span>
+                            </td>
+                            <td>
+                                <div class="fw-semibold">{{ review.vehicle.brand }} {{ review.vehicle.model }}</div>
+                                <small class="text-muted">{{ review.vehicle.license_plate }}</small>
+                            </td>
+                            <td>
+                                <div class="fw-semibold">{{ review.user.username }}</div>
+                                <small class="text-muted">{{ review.user.email|default:"-" }}</small>
+                            </td>
+                            <td>
+                                <div class="status-pill success">
+                                    <span class="status-dot" style="background: var(--color-success);"></span>
+                                    {{ review.rating }} 星
+                                </div>
+                            </td>
+                            <td>
+                                {{ review.comment|default:"（无文字评价）"|truncatechars:80 }}
+                            </td>
+                            <td>{{ review.created_at|date:"Y-m-d H:i" }}</td>
+                            <td class="text-end">
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <a href="{% url 'review_edit' review.id %}" class="btn btn-outline-primary" title="编辑">
+                                        <i class="fas fa-pen"></i>
+                                    </a>
+                                    <form method="post" action="{% url 'review_delete' review.id %}" onsubmit="return confirm('确定要删除该评价吗？');">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-outline-danger" title="删除">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+                <div class="p-5 text-center text-muted">
+                    <i class="fas fa-comments fa-3x mb-3"></i>
+                    <p class="mb-0">暂无评价记录。</p>
+                </div>
+            {% endif %}
+        </div>
+        {% if page_obj.has_other_pages %}
+        <div class="card-footer">
+            <nav>
+                <ul class="pagination justify-content-center mb-0">
+                    {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if query %}&q={{ query }}{% endif %}{% if rating %}&rating={{ rating }}{% endif %}">上一页</a>
+                    </li>
+                    {% endif %}
+                    {% for num in page_obj.paginator.page_range %}
+                        {% if page_obj.number == num %}
+                            <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                            <li class="page-item"><a class="page-link" href="?page={{ num }}{% if query %}&q={{ query }}{% endif %}{% if rating %}&rating={{ rating }}{% endif %}">{{ num }}</a></li>
+                        {% endif %}
+                    {% endfor %}
+                    {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if query %}&q={{ query }}{% endif %}{% if rating %}&rating={{ rating }}{% endif %}">下一页</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+

@@ -1,0 +1,229 @@
+{% extends "base_user.html" %}
+{% load static %}
+
+{% block title %}{{ title }} - 租车管理系统{% endblock %}
+
+{% block content %}
+<div class="profile-fullscreen">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="mb-1">
+                <i class="fas fa-user-edit me-2"></i>{{ title }}
+            </h1>
+            <p class="text-muted mb-0">请填写您的真实信息，以便我们为您提供更好的服务</p>
+        </div>
+        {% if customer %}
+            <a href="{% url 'accounts:profile' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-2"></i>返回个人中心
+            </a>
+        {% endif %}
+    </div>
+
+    {% if debug_info %}
+    <div class="alert alert-info mb-3">
+        <h6><i class="fas fa-info-circle me-2"></i>调试信息</h6>
+        <small>
+            用户ID: {{ debug_info.user_id }} | 
+            邮箱: {{ debug_info.user_email|default:"无" }} | 
+            用户名: {{ debug_info.user_username }}<br>
+            客户存在: {{ debug_info.customer_exists|yesno:"是,否" }} | 
+            客户ID: {{ debug_info.customer_id|default:"无" }} | 
+            客户关联用户: {{ debug_info.customer_user|default:"无" }}<br>
+            客户邮箱: {{ debug_info.customer_email|default:"无" }} | 
+            客户手机: {{ debug_info.customer_phone|default:"无" }}
+        </small>
+    </div>
+    {% endif %}
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-id-card me-2"></i>客户信息
+                    </h5>
+                </div>
+                <div class="card-body p-4">
+                    <form method="post" novalidate>
+                        {% csrf_token %}
+                        
+                        <!-- 基础信息 -->
+                        <div class="mb-4">
+                            <h6 class="text-primary fw-bold mb-3">
+                                <i class="fas fa-user me-2"></i>基本信息
+                            </h6>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label for="{{ form.name.id_for_label }}" class="form-label fw-semibold">
+                                        {{ form.name.label }} <span class="text-danger">*</span>
+                                    </label>
+                                    {{ form.name }}
+                                    {% if form.name.errors %}
+                                        <div class="text-danger small mt-1">
+                                            {{ form.name.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                    {% if form.name.help_text %}
+                                        <div class="form-text">{{ form.name.help_text }}</div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <label for="{{ form.phone.id_for_label }}" class="form-label fw-semibold">
+                                        {{ form.phone.label }} <span class="text-danger">*</span>
+                                    </label>
+                                    {{ form.phone }}
+                                    {% if form.phone.errors %}
+                                        <div class="text-danger small mt-1">
+                                            {{ form.phone.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                    {% if form.phone.help_text %}
+                                        <div class="form-text">{{ form.phone.help_text }}</div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <label for="{{ form.email.id_for_label }}" class="form-label fw-semibold">
+                                        {{ form.email.label }}
+                                    </label>
+                                    {{ form.email }}
+                                    {% if form.email.errors %}
+                                        <div class="text-danger small mt-1">
+                                            {{ form.email.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                    {% if form.email.help_text %}
+                                        <div class="form-text">{{ form.email.help_text }}</div>
+                                    {% endif %}
+                                </div>
+                                
+                                {% if form.member_level %}
+                                    <div class="col-md-6">
+                                        {{ form.member_level }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <hr class="my-4">
+
+                        <!-- 证件信息 -->
+                        <div class="mb-4">
+                            <h6 class="text-primary fw-bold mb-3">
+                                <i class="fas fa-id-card me-2"></i>证件信息
+                            </h6>
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    <label for="{{ form.id_card.id_for_label }}" class="form-label fw-semibold">
+                                        {{ form.id_card.label }} <span class="text-danger">*</span>
+                                    </label>
+                                    {{ form.id_card }}
+                                    {% if form.id_card.errors %}
+                                        <div class="text-danger small mt-1">
+                                            {{ form.id_card.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                    {% if form.id_card.help_text %}
+                                        <div class="form-text">{{ form.id_card.help_text }}</div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="col-md-4">
+                                    <label for="{{ form.license_number.id_for_label }}" class="form-label fw-semibold">
+                                        {{ form.license_number.label }} <span class="text-danger">*</span>
+                                    </label>
+                                    {{ form.license_number }}
+                                    {% if form.license_number.errors %}
+                                        <div class="text-danger small mt-1">
+                                            {{ form.license_number.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                    {% if form.license_number.help_text %}
+                                        <div class="form-text">{{ form.license_number.help_text }}</div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="col-md-4">
+                                    <label for="{{ form.license_type.id_for_label }}" class="form-label fw-semibold">
+                                        {{ form.license_type.label }} <span class="text-danger">*</span>
+                                    </label>
+                                    {{ form.license_type }}
+                                    {% if form.license_type.errors %}
+                                        <div class="text-danger small mt-1">
+                                            {{ form.license_type.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                    {% if form.license_type.help_text %}
+                                        <div class="form-text">{{ form.license_type.help_text }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 提交按钮 -->
+                        <div class="d-flex justify-content-end gap-3 mt-4 pt-3 border-top">
+                            <a href="{% url 'accounts:profile' %}" class="btn btn-outline-secondary px-4">
+                                <i class="fas fa-times me-2"></i>取消
+                            </a>
+                            <button type="submit" class="btn btn-primary px-5">
+                                <i class="fas fa-save me-2"></i>保存信息
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- 填写说明 -->
+            <div class="card shadow mt-4">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-info-circle me-2"></i>填写说明
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <div class="p-3 rounded bg-light border-start border-success border-4">
+                                <h6 class="fw-bold text-success mb-2">
+                                    <i class="fas fa-mobile-alt me-2"></i>手机号
+                                </h6>
+                                <ul class="small mb-0 ps-3">
+                                    <li>必须为<strong>11位数字</strong></li>
+                                    <li>以<strong>1开头</strong>，第2位为<strong>3-9</strong></li>
+                                    <li>必须<strong>唯一</strong></li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="p-3 rounded bg-light border-start border-primary border-4">
+                                <h6 class="fw-bold text-primary mb-2">
+                                    <i class="fas fa-id-card me-2"></i>身份证号
+                                </h6>
+                                <ul class="small mb-0 ps-3">
+                                    <li><strong>18位</strong>身份证号码</li>
+                                    <li>格式<strong>验证</strong></li>
+                                    <li>必须<strong>唯一</strong></li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="p-3 rounded bg-light border-start border-warning border-4">
+                                <h6 class="fw-bold text-warning mb-2">
+                                    <i class="fas fa-star me-2"></i>会员等级
+                                </h6>
+                                <ul class="small mb-0 ps-3">
+                                    <li>VIP享受<strong>9折优惠</strong></li>
+                                    <li>可<strong>随时调整</strong></li>
+                                    <li>影响<strong>服务优先级</strong></li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

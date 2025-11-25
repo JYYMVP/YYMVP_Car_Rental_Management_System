@@ -1,0 +1,219 @@
+{% extends "vehicles/base.html" %}
+
+{% block title %}取消租赁订单 - 租车管理系统{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>
+        <i class="bi bi-exclamation-triangle me-2"></i>取消租赁订单
+    </h1>
+    <a href="{% url 'rentals:rental_detail' rental.id %}" class="btn btn-secondary">
+        <i class="bi bi-arrow-left"></i> 返回详情
+    </a>
+</div>
+
+<!-- 警告信息 -->
+<div class="col-12 mb-4">
+    <div class="alert alert-warning border-0 shadow-sm">
+        <h6 class="alert-heading">
+            <i class="bi bi-exclamation-triangle me-2"></i>重要提示
+        </h6>
+        <p class="mb-0">
+            取消订单后，将释放所租车辆，订单状态变更为"已取消"。此操作不可撤销，请谨慎操作。
+        </p>
+    </div>
+</div>
+
+<!-- 订单基本信息卡片 -->
+<div class="col-12 mb-4">
+    <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0"><i class="bi bi-info-circle me-2"></i>订单基本信息</h5>
+        </div>
+        <div class="card-body p-4">
+            <div class="row g-4">
+                <div class="col-lg-3 col-md-6">
+                    <div class="p-3 border rounded h-100">
+                        <div class="text-muted small mb-1"><i class="bi bi-receipt me-1"></i>订单号</div>
+                        <div class="fw-semibold">#{{ rental.id }}</div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-6">
+                    <div class="p-3 border rounded h-100">
+                        <div class="text-muted small mb-1"><i class="bi bi-flag me-1"></i>当前状态</div>
+                        <div>
+                            {% if rental.status == 'PENDING' %}
+                                <span class="badge bg-info">预订中</span>
+                            {% elif rental.status == 'ONGOING' %}
+                                <span class="badge bg-success">进行中</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-6">
+                    <div class="p-3 border rounded h-100">
+                        <div class="text-muted small mb-1"><i class="bi bi-cash-stack me-1"></i>当前金额</div>
+                        <div class="fw-semibold text-success">¥{{ rental.total_amount|floatformat:2 }}</div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-6">
+                    <div class="p-3 border rounded h-100">
+                        <div class="text-muted small mb-1"><i class="bi bi-clock me-1"></i>创建时间</div>
+                        <div class="fw-semibold">{{ rental.created_at|date:"Y-m-d H:i" }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 客户信息卡片 -->
+<div class="col-12 mb-4">
+    <div class="card shadow-sm">
+        <div class="card-header bg-info text-white">
+            <h5 class="mb-0"><i class="bi bi-person me-2"></i>客户信息</h5>
+        </div>
+        <div class="card-body p-4">
+            <div class="row g-4">
+                <div class="col-lg-4 col-md-6">
+                    <div class="p-3 border rounded h-100">
+                        <div class="text-muted small mb-1"><i class="bi bi-person me-1"></i>客户姓名</div>
+                        <div class="fw-semibold">{{ rental.customer.name }}</div>
+                    </div>
+                </div>
+                <div class="col-lg-4 col-md-6">
+                    <div class="p-3 border rounded h-100">
+                        <div class="text-muted small mb-1"><i class="bi bi-telephone me-1"></i>联系电话</div>
+                        <div class="fw-semibold">{{ rental.customer.phone }}</div>
+                    </div>
+                </div>
+                <div class="col-lg-4 col-md-6">
+                    <div class="p-3 border rounded h-100">
+                        <div class="text-muted small mb-1"><i class="bi bi-star me-1"></i>会员等级</div>
+                        <div>
+                            <span class="badge {% if rental.customer.member_level == 'VIP' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">
+                                {{ rental.customer.get_member_level_display }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 车辆信息卡片 -->
+<div class="col-12 mb-4">
+    <div class="card shadow-sm">
+        <div class="card-header bg-success text-white">
+            <h5 class="mb-0"><i class="bi bi-car-front me-2"></i>车辆信息</h5>
+        </div>
+        <div class="card-body p-4">
+            <div class="row g-4">
+                <div class="col-lg-4 col-md-6">
+                    <div class="p-3 border rounded h-100">
+                        <div class="text-muted small mb-1"><i class="bi bi-car-front me-1"></i>车辆信息</div>
+                        <div class="fw-semibold">{{ rental.vehicle.brand }} {{ rental.vehicle.model }}</div>
+                    </div>
+                </div>
+                <div class="col-lg-4 col-md-6">
+                    <div class="p-3 border rounded h-100">
+                        <div class="text-muted small mb-1"><i class="bi bi-credit-card me-1"></i>车牌号</div>
+                        <div class="fw-semibold">{{ rental.vehicle.license_plate }}</div>
+                    </div>
+                </div>
+                <div class="col-lg-4 col-md-6">
+                    <div class="p-3 border rounded h-100">
+                        <div class="text-muted small mb-1"><i class="bi bi-gear me-1"></i>车辆状态</div>
+                        <div>
+                            <span class="badge {% if rental.vehicle.status == 'AVAILABLE' %}bg-success{% elif rental.vehicle.status == 'RENTED' %}bg-info{% else %}bg-warning{% endif %}">
+                                {{ rental.vehicle.get_status_display }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 租赁时间信息卡片 -->
+<div class="col-12 mb-4">
+    <div class="card shadow-sm">
+        <div class="card-header bg-warning text-dark">
+            <h5 class="mb-0"><i class="bi bi-calendar-event me-2"></i>租赁时间信息</h5>
+        </div>
+        <div class="card-body p-4">
+            <div class="row g-4">
+                <div class="col-lg-4 col-md-6">
+                    <div class="p-3 border rounded h-100">
+                        <div class="text-muted small mb-1"><i class="bi bi-calendar-plus me-1"></i>开始日期</div>
+                        <div class="fw-semibold">{{ rental.start_date|date:"Y年m月d日" }}</div>
+                    </div>
+                </div>
+                <div class="col-lg-4 col-md-6">
+                    <div class="p-3 border rounded h-100">
+                        <div class="text-muted small mb-1"><i class="bi bi-calendar-check me-1"></i>结束日期</div>
+                        <div class="fw-semibold">{{ rental.end_date|date:"Y年m月d日" }}</div>
+                    </div>
+                </div>
+                <div class="col-lg-4 col-md-6">
+                    <div class="p-3 border rounded h-100">
+                        <div class="text-muted small mb-1"><i class="bi bi-hourglass me-1"></i>租赁天数</div>
+                        <div><span class="badge bg-secondary">{{ rental.rental_days }}天</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 取消原因输入卡片 -->
+<div class="col-12 mb-4">
+    <div class="card shadow-sm">
+        <div class="card-header bg-danger text-white">
+            <h5 class="mb-0"><i class="bi bi-x-circle me-2"></i>取消订单</h5>
+        </div>
+        <div class="card-body p-4">
+            <form method="post">
+                {% csrf_token %}
+                <div class="mb-4">
+                    <label for="{{ form.cancel_reason.id_for_label }}" class="form-label fw-semibold">
+                        <i class="bi bi-chat-left-text me-1"></i>{{ form.cancel_reason.label }}
+                        <span class="text-danger">*</span>
+                    </label>
+                    {{ form.cancel_reason }}
+                    {% if form.cancel_reason.errors %}
+                        <div class="text-danger small mt-1">
+                            {{ form.cancel_reason.errors.0 }}
+                        </div>
+                    {% endif %}
+                    <div class="form-text">
+                        请详细说明取消订单的原因，这将被记录在订单备注中
+                    </div>
+                </div>
+                
+                <!-- 取消后的影响 -->
+                <div class="alert alert-info border-0 shadow-sm mb-4">
+                    <h6 class="alert-heading"><i class="bi bi-info-circle me-2"></i>温馨提示</h6>
+                    <ul class="mb-0 ps-3">
+                        <li>订单状态将变更为"已取消"</li>
+                        <li>所租车辆状态将恢复为"可用"</li>
+                        <li>取消原因将记录在订单备注中</li>
+                        <li>客户可重新预订其他车辆</li>
+                    </ul>
+                </div>
+                
+                <div class="d-flex justify-content-end gap-3 pt-3 border-top">
+                    <a href="{% url 'rentals:rental_detail' rental.id %}" class="btn btn-outline-secondary px-4">
+                        <i class="bi bi-arrow-left"></i> 返回
+                    </a>
+                    <button type="submit" class="btn btn-danger px-5" onclick="return confirm('确认取消此订单？此操作不可撤销！')">
+                        <i class="bi bi-x-circle"></i> 确认取消订单
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

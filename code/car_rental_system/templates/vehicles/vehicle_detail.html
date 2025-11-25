@@ -1,0 +1,256 @@
+{% extends "vehicles/base.html" %}
+
+{% block title %}{{ vehicle.license_plate }} - 车辆详情 - 租车管理系统{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1><i class="bi bi-car-front"></i> 车辆详情</h1>
+    <div>
+        <a href="{% url 'vehicles:vehicle_list' %}" class="btn btn-outline-secondary me-2">
+            <i class="bi bi-arrow-left"></i> 返回列表
+        </a>
+        <a href="{% url 'vehicles:vehicle_update' vehicle.pk %}" class="btn btn-primary">
+            <i class="bi bi-pencil"></i> 编辑
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <!-- 车辆基本信息 -->
+    <div class="col-md-8">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-info-circle"></i> 车辆信息</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <table class="table table-borderless">
+                            <tr>
+                                <td class="fw-bold" style="width: 30%;">车牌号：</td>
+                                <td><strong class="text-primary">{{ vehicle.license_plate }}</strong></td>
+                            </tr>
+                            <tr>
+                                <td class="fw-bold">品牌：</td>
+                                <td>{{ vehicle.brand }}</td>
+                            </tr>
+                            <tr>
+                                <td class="fw-bold">型号：</td>
+                                <td>{{ vehicle.model }}</td>
+                            </tr>
+                            <tr>
+                                <td class="fw-bold">类型：</td>
+                                <td><span class="badge bg-secondary">{{ vehicle.vehicle_type }}</span></td>
+                            </tr>
+                            <tr>
+                                <td class="fw-bold">座位数：</td>
+                                <td><span class="badge bg-info">{{ vehicle.seats }}座</span></td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <table class="table table-borderless">
+                            <tr>
+                                <td class="fw-bold" style="width: 30%;">颜色：</td>
+                                <td>{{ vehicle.color }}</td>
+                            </tr>
+                            <tr>
+                                <td class="fw-bold">日租金：</td>
+                                <td><span class="text-success fw-bold fs-5">¥{{ vehicle.daily_rate }}</span></td>
+                            </tr>
+                            <tr>
+                                <td class="fw-bold">状态：</td>
+                                <td>
+                                    {% if vehicle.status == 'AVAILABLE' %}
+                                        <span class="badge bg-success fs-6">可用</span>
+                                    {% elif vehicle.status == 'RENTED' %}
+                                        <span class="badge bg-danger fs-6">已租</span>
+                                    {% else %}
+                                        <span class="badge bg-warning fs-6">维修中</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="fw-bold">创建时间：</td>
+                                <td>{{ vehicle.created_at|date:"Y年m月d日 H:i" }}</td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 车辆状态管理 -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-gear"></i> 状态管理</h5>
+            </div>
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-md-6">
+                        <label class="form-label">当前状态</label>
+                        <div>
+                            {% if vehicle.status == 'AVAILABLE' %}
+                                <span class="badge bg-success fs-6">可用</span>
+                            {% elif vehicle.status == 'RENTED' %}
+                                <span class="badge bg-danger fs-6">已租</span>
+                            {% else %}
+                                <span class="badge bg-warning fs-6">维修中</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">快速更新状态</label>
+                        <div class="btn-group w-100" role="group">
+                            <button type="button" class="btn btn-success" 
+                                    onclick="updateVehicleStatus({{ vehicle.pk }}, 'AVAILABLE', this)"
+                                    {% if vehicle.status == 'AVAILABLE' %}disabled{% endif %}>
+                                <i class="bi bi-check-circle"></i> 可用
+                            </button>
+                            <button type="button" class="btn btn-danger" 
+                                    onclick="updateVehicleStatus({{ vehicle.pk }}, 'RENTED', this)"
+                                    {% if vehicle.status == 'RENTED' %}disabled{% endif %}>
+                                <i class="bi bi-x-circle"></i> 已租
+                            </button>
+                            <button type="button" class="btn btn-warning" 
+                                    onclick="updateVehicleStatus({{ vehicle.pk }}, 'MAINTENANCE', this)"
+                                    {% if vehicle.status == 'MAINTENANCE' %}disabled{% endif %}>
+                                <i class="bi bi-tools"></i> 维修中
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 租赁历史 -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-clock-history"></i> 租赁历史</h5>
+            </div>
+            <div class="card-body">
+                {% if rental_orders %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>订单号</th>
+                                <th>客户</th>
+                                <th>租期</th>
+                                <th>状态</th>
+                                <th>创建时间</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for rental in rental_orders %}
+                            <tr>
+                                <td><strong>#{{ rental.id }}</strong></td>
+                                <td>{{ rental.customer.name }}</td>
+                                <td>
+                                    {{ rental.start_date|date:"m-d" }} 至 {{ rental.end_date|date:"m-d" }}
+                                </td>
+                                <td>
+                                    {% if rental.status == 'PENDING' %}
+                                        <span class="badge bg-warning">预订中</span>
+                                    {% elif rental.status == 'ONGOING' %}
+                                        <span class="badge bg-success">进行中</span>
+                                    {% elif rental.status == 'COMPLETED' %}
+                                        <span class="badge bg-secondary">已完成</span>
+                                    {% elif rental.status == 'CANCELLED' %}
+                                        <span class="badge bg-danger">已取消</span>
+                                    {% else %}
+                                        <span class="badge bg-info">{{ rental.get_status_display }}</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ rental.created_at|date:"m-d H:i" }}</td>
+                                <td>
+                                    <a href="{% url 'rentals:rental_detail' rental.pk %}" 
+                                       class="btn btn-sm btn-outline-primary">
+                                        <i class="bi bi-eye"></i> 查看
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="bi bi-clock-history" style="font-size: 2rem; color: #ccc;"></i>
+                    <p class="text-muted mt-2">暂无租赁历史</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- 侧边栏 -->
+    <div class="col-md-4">
+        <!-- 快速操作 -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-lightning"></i> 快速操作</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{% url 'vehicles:vehicle_update' vehicle.pk %}" class="btn btn-primary">
+                        <i class="bi bi-pencil"></i> 编辑车辆信息
+                    </a>
+                    <a href="{% url 'vehicles:vehicle_delete' vehicle.pk %}" class="btn btn-danger">
+                        <i class="bi bi-trash"></i> 删除车辆
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- 车辆统计 -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-bar-chart"></i> 租赁统计</h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-4">
+                        <div class="border rounded p-2">
+                            <div class="h4 text-success mb-1">{{ rental_stats.total|default:0 }}</div>
+                            <small class="text-muted">总订单数</small>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="border rounded p-2">
+                            <div class="h4 text-info mb-1">{{ rental_stats.active|default:0 }}</div>
+                            <small class="text-muted">使用中</small>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="border rounded p-2">
+                            <div class="h4 text-secondary mb-1">{{ rental_stats.completed|default:0 }}</div>
+                            <small class="text-muted">已完成</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 更新日志 -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-clock"></i> 更新日志</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-2">
+                    <small class="text-muted">创建时间：</small>
+                    <br>
+                    <small>{{ vehicle.created_at|date:"Y年m月d日 H:i" }}</small>
+                </div>
+                <div>
+                    <small class="text-muted">最后更新：</small>
+                    <br>
+                    <small>{{ vehicle.updated_at|date:"Y年m月d日 H:i" }}</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
