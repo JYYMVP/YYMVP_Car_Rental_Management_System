@@ -236,6 +236,8 @@
                                     <td>
                                         {% if rental.status == 'ONGOING' %}
                                             <span class="status-pill success"><span class="status-dot"></span>进行中</span>
+                                        {% elif rental.status == 'OVERDUE' %}
+                                            <span class="status-pill danger"><span class="status-dot"></span>已超时未归还</span>
                                         {% elif rental.status == 'COMPLETED' %}
                                             <span class="status-pill completed"><span class="status-dot"></span>已完成</span>
                                         {% elif rental.status == 'CANCELLED' %}

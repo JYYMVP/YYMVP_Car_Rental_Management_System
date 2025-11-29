@@ -7,7 +7,14 @@
 <div class="profile-fullscreen">
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
-        <h1 class="mb-1"><i class="fas fa-user-circle me-2"></i>个人中心</h1>
+        <h1 class="mb-1">
+            <i class="fas fa-user-circle me-2"></i>个人中心
+            {% if customer and customer.member_level == 'VIP' %}
+                <span class="badge bg-warning text-dark ms-2" style="font-size: 0.6em; padding: 0.5em 0.8em;">
+                    <i class="fas fa-star"></i> VIP会员
+                </span>
+            {% endif %}
+        </h1>
         <p class="text-muted mb-0">欢迎，{{ user.username }}！</p>
     </div>
 </div>
@@ -24,6 +31,20 @@
                     <tr>
                         <th width="30%">用户名：</th>
                         <td>{{ user.username }}</td>
+                    </tr>
+                    <tr>
+                        <th>会员等级：</th>
+                        <td>
+                            {% if customer and customer.member_level == 'VIP' %}
+                                <span class="badge bg-warning text-dark">
+                                    <i class="fas fa-star"></i> VIP会员
+                                </span>
+                            {% else %}
+                                <span class="badge bg-secondary">
+                                    <i class="fas fa-user"></i> 普通会员
+                                </span>
+                            {% endif %}
+                        </td>
                     </tr>
                     <tr>
                         <th>邮箱：</th>
@@ -70,6 +91,117 @@
     </div>
 </div>
 
+<!-- VIP会员权益或升级信息 -->
+{% if customer %}
+    {% if customer.member_level == 'VIP' %}
+    <!-- VIP会员权益卡片 -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow border-warning">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0">
+                        <i class="fas fa-star me-2"></i>VIP会员专属权益
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <div class="d-flex align-items-start">
+                                <div class="flex-shrink-0">
+                                    <i class="fas fa-check-circle text-success fs-4 me-3"></i>
+                                </div>
+                                <div>
+                                    <h6 class="mb-1">免押金租车</h6>
+                                    <p class="text-muted mb-0 small">所有订单无需支付押金，让租车更轻松</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="d-flex align-items-start">
+                                <div class="flex-shrink-0">
+                                    <i class="fas fa-percent text-success fs-4 me-3"></i>
+                                </div>
+                                <div>
+                                    <h6 class="mb-1">9折优惠</h6>
+                                    <p class="text-muted mb-0 small">所有订单享受9折优惠，省钱又省心</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-12">
+                            <div class="alert alert-light mb-0">
+                                <i class="fas fa-info-circle me-2"></i>
+                                <strong>温馨提示：</strong>您已成功获得VIP会员身份，享受所有VIP专属权益。继续保持良好的租车记录，享受更多优惠！
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% elif vip_upgrade_info %}
+    <!-- VIP升级进度卡片 -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow border-info">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-trophy me-2"></i>VIP升级进度
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if vip_upgrade_info.is_eligible %}
+                    <div class="alert alert-success mb-0">
+                        <i class="fas fa-check-circle me-2"></i>
+                        <strong>恭喜！</strong>您已满足VIP升级条件（连续{{ vip_upgrade_info.consecutive_count }}个订单表现优异），系统将在下次还车时自动为您升级为VIP会员！
+                    </div>
+                    {% else %}
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <h6 class="mb-3">
+                                <i class="fas fa-star me-2 text-warning"></i>VIP升级条件
+                            </h6>
+                            <p class="mb-2">连续<strong>10个</strong>已完成订单都满足以下条件：</p>
+                            <ul class="mb-0">
+                                <li>没有超时归还</li>
+                                <li>没有不诚信的异地还车行为</li>
+                            </ul>
+                            <div class="mt-3">
+                                <div class="d-flex align-items-center">
+                                    <span class="me-2">当前进度：</span>
+                                    <div class="progress flex-grow-1" style="height: 25px;">
+                                        {% widthratio vip_upgrade_info.consecutive_count 10 100 as progress_percentage %}
+                                        <div class="progress-bar bg-warning" role="progressbar" 
+                                             style="width: {{ progress_percentage }}%"
+                                             aria-valuenow="{{ vip_upgrade_info.consecutive_count }}" 
+                                             aria-valuemin="0" 
+                                             aria-valuemax="10">
+                                            {{ vip_upgrade_info.consecutive_count }}/10
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 text-center">
+                            <div class="border rounded p-4 bg-light">
+                                <h2 class="text-warning mb-2">{{ vip_upgrade_info.consecutive_count }}/10</h2>
+                                <p class="text-muted mb-0 small">连续诚信订单</p>
+                                {% if vip_upgrade_info.remaining > 0 %}
+                                <hr class="my-3">
+                                <p class="mb-0">
+                                    <small class="text-muted">还需 <strong class="text-primary">{{ vip_upgrade_info.remaining }}</strong> 个订单</small>
+                                </p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+{% endif %}
+
 <!-- 我的订单 -->
 <div class="card shadow">
     <div class="card-header bg-info text-white">
@@ -106,6 +238,8 @@
                                     <span class="badge bg-warning">预订中</span>
                                 {% elif rental.status == 'ONGOING' %}
                                     <span class="badge bg-info">进行中</span>
+                                {% elif rental.status == 'OVERDUE' %}
+                                    <span class="badge bg-danger">已超时未归还</span>
                                 {% elif rental.status == 'COMPLETED' %}
                                     <span class="badge bg-success">已完成</span>
                                 {% elif rental.status == 'CANCELLED' %}

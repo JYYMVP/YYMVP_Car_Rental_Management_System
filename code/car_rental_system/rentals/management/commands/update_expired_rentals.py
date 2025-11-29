@@ -10,7 +10,7 @@ from accounts.models import Payment
 
 
 class Command(BaseCommand):
-    help = '自动更新租赁订单状态: 预订中→进行中, 进行中→已完成, 并同步车辆状态'
+    help = '自动更新租赁订单状态: 预订中→进行中, 并同步车辆状态（注意：订单只有在用户还车后才完成）'
 
     def handle(self, *args, **options):
         """执行订单和车辆状态的自动更新"""
@@ -26,19 +26,22 @@ class Command(BaseCommand):
         activated_rentals, activated_vehicles = self._activate_pending_rentals(today)
         
         # ====================
-        # 阶段2: 完成过期订单
+        # 阶段2: 检查过期订单（仅提醒，不自动完成）
         # ====================
-        self.stdout.write(self.style.WARNING('\n[阶段2] 完成过期订单'))
-        completed_rentals, released_vehicles = self._complete_expired_rentals(today)
+        self.stdout.write(self.style.WARNING('\n[阶段2] 检查过期订单'))
+        expired_rentals = self._check_expired_rentals(today)
         
         # 输出执行摘要
         self.stdout.write(self.style.SUCCESS('\n' + '='*60))
         self.stdout.write(self.style.SUCCESS('执行完成!'))
         self.stdout.write(self.style.SUCCESS(f'激活订单数量: {len(activated_rentals)}'))
         self.stdout.write(self.style.SUCCESS(f'激活车辆数量: {len(activated_vehicles)}'))
-        self.stdout.write(self.style.SUCCESS(f'完成订单数量: {len(completed_rentals)}'))
-        self.stdout.write(self.style.SUCCESS(f'释放车辆数量: {len(released_vehicles)}'))
+        self.stdout.write(self.style.WARNING(f'过期订单数量: {len(expired_rentals)} (需手动还车)'))
         self.stdout.write(self.style.SUCCESS('='*60 + '\n'))
+        if expired_rentals:
+            self.stdout.write(self.style.WARNING(
+                '\n注意：订单只有在用户还车后才能完成，请提醒客户及时还车。'
+            ))
     
     def _activate_pending_rentals(self, today):
         """激活预订中的订单(预订中 → 进行中)"""
@@ -89,83 +92,54 @@ class Command(BaseCommand):
         
         return activated_rentals, activated_vehicles
     
-    def _complete_expired_rentals(self, today):
-        """完成过期订单(进行中 → 已完成)"""
+    def _check_expired_rentals(self, today):
+        """检查过期订单并更新状态为"已超时未归还"（订单只有在还车后才完成）"""
         # 查询所有过期的"进行中"订单
         expired_rentals = Rental.objects.filter(
             status='ONGOING',
             end_date__lt=today
-        ).select_related('vehicle')
+        ).select_related('vehicle', 'customer')
         
         expired_count = expired_rentals.count()
         
         if expired_count == 0:
             self.stdout.write(self.style.SUCCESS('未发现过期的进行中订单'))
-            return [], []
+            return []
         
-        self.stdout.write(f'发现 {expired_count} 个过期订单')
+        self.stdout.write(self.style.WARNING(
+            f'发现 {expired_count} 个过期订单，正在更新状态为"已超时未归还"：'
+        ))
         
-        # 收集涉及的车辆ID
-        vehicle_ids = set()
-        completed_rentals = []
+        # 收集更新记录
+        overdue_rentals = []
         
-        # 更新订单状态
+        # 更新订单状态为"已超时未归还"
         with transaction.atomic():
             for rental in expired_rentals:
-                rental.status = 'COMPLETED'
-                if not rental.actual_return_date:
-                    rental.actual_return_date = rental.end_date
+                overdue_days = (today - rental.end_date).days
+                # 更新订单状态为"已超时未归还"
+                rental.status = 'OVERDUE'
                 rental.save()
-                vehicle_ids.add(rental.vehicle.id)
-                completed_rentals.append(rental)
+                overdue_rentals.append(rental)
                 
                 self.stdout.write(
                     f'  - 订单 #{rental.id}: {rental.customer.name} - '
                     f'{rental.vehicle.license_plate} '
-                    f'({rental.start_date} ~ {rental.end_date})'
+                    f'（过期 {overdue_days} 天，计划结束日期：{rental.end_date}）'
                 )
-                
-                self._settle_completed_rental(rental)
-        
-        self.stdout.write(self.style.SUCCESS(f'\n✓ 已成功完成 {len(completed_rentals)} 个订单'))
-        
-        # 更新车辆状态
-        self.stdout.write(self.style.WARNING(f'\n更新车辆状态...'))
-        released_vehicles = []
-        
-        for vehicle_id in vehicle_ids:
-            # 检查该车辆是否还有其他"进行中"的订单
-            ongoing_rentals = Rental.objects.filter(
-                vehicle_id=vehicle_id,
-                status='ONGOING'
-            ).count()
-            
-            if ongoing_rentals == 0:
-                # 没有进行中的订单,可以将车辆状态改为"可用"
-                vehicle = Vehicle.objects.get(id=vehicle_id)
-                if vehicle.status == 'RENTED':
-                    vehicle.status = 'AVAILABLE'
-                    vehicle.save()
-                    released_vehicles.append(vehicle)
-                    self.stdout.write(
-                        f'  - 车辆 {vehicle.license_plate} '
-                        f'({vehicle.brand} {vehicle.model}) 已更新为"可用"'
-                    )
-            else:
-                vehicle = Vehicle.objects.get(id=vehicle_id)
                 self.stdout.write(
-                    f'  - 车辆 {vehicle.license_plate} 仍有 {ongoing_rentals} '
-                    f'个进行中订单,保持"已租"状态'
+                    f'    → 订单状态已更新为"已超时未归还"'
                 )
         
-        if released_vehicles:
-            self.stdout.write(self.style.SUCCESS(
-                f'\n✓ 已成功更新 {len(released_vehicles)} 个车辆状态为"可用"'
-            ))
-        else:
-            self.stdout.write(self.style.WARNING('\n所有车辆仍有进行中订单,未更新车辆状态'))
+        self.stdout.write(self.style.SUCCESS(
+            f'\n✓ 已成功更新 {len(overdue_rentals)} 个订单状态为"已超时未归还"'
+        ))
         
-        return completed_rentals, released_vehicles
+        self.stdout.write(self.style.WARNING(
+            '\n注意：这些订单需要在还车时处理，系统会自动计算超时费用。'
+        ))
+        
+        return overdue_rentals
 
     def _settle_completed_rental(self, rental):
         """订单完成后自动结算押金/更新财务数据"""

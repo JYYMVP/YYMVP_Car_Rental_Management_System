@@ -170,6 +170,30 @@
                     </div>
                 </div>
                 
+                <div class="mb-4">
+                    <label for="{{ form.actual_return_location.id_for_label }}" class="form-label fw-semibold">
+                        <i class="bi bi-geo-alt me-1"></i>{{ form.actual_return_location.label }}
+                    </label>
+                    {{ form.actual_return_location }}
+                    {% if form.actual_return_location.errors %}
+                        <div class="text-danger small mt-1">
+                            {{ form.actual_return_location.errors.0 }}
+                        </div>
+                    {% endif %}
+                    <div class="form-text">
+                        实际还车门店，如：北京门店。若不填写，默认使用取车门店（{{ rental.pickup_location }}）。如果还车门店与取车门店不同，将自动计算异地还车费用。
+                    </div>
+                </div>
+                
+                <!-- 取车信息显示 -->
+                <div class="alert alert-light mb-4">
+                    <h6 class="alert-heading"><i class="bi bi-info-circle me-2"></i>取车信息</h6>
+                    <p class="mb-1"><strong>取车门店：</strong>{{ rental.pickup_location }}</p>
+                    {% if rental.is_cross_location_return and rental.return_location %}
+                        <p class="mb-0"><strong>计划还车门店：</strong>{{ rental.return_location }} <span class="badge bg-warning text-dark">已预约异地还车</span></p>
+                    {% endif %}
+                </div>
+                
                 <!-- 费用预览 -->
                 <div class="card border shadow-sm mb-4" id="cost-preview" style="display: none;">
                     <div class="card-body bg-light">
@@ -197,8 +221,9 @@
         <h6 class="alert-heading"><i class="bi bi-info-circle me-2"></i>温馨提示</h6>
         <ul class="mb-0 ps-3">
             <li>归还后车辆状态将更新为"可用"</li>
-            <li>超期还车将按正常日租金收费</li>
-            <li>订单状态将更新为"已完成"</li>
+            <li>超期还车将按日租金计算超时费用</li>
+            <li>如果还车门店与取车门店不同，且租车时未预约异地还车，将增加异地还车费用</li>
+            <li>订单只有在还车后才标记为"已完成"</li>
             <li>请检查车辆状况并确认相关费用</li>
         </ul>
     </div>
@@ -212,8 +237,8 @@ $(document).ready(function() {
     // 初始化计算
     updateCostPreview();
     
-    // 还车日期变化时重新计算
-    $('#id_actual_return_date').change(function() {
+    // 还车日期或还车门店变化时重新计算
+    $('#id_actual_return_date, #id_actual_return_location').change(function() {
         updateCostPreview();
     });
     
@@ -223,6 +248,15 @@ $(document).ready(function() {
         const startDate = new Date('{{ rental.start_date|date:"Y-m-d" }}');
         const dailyRate = {{ rental.vehicle.daily_rate }};
         const isVip = '{{ rental.customer.member_level }}' === 'VIP';
+        const pickupLocation = '{{ rental.pickup_location|escapejs }}';
+        const actualReturnLocation = $('#id_actual_return_location').val().trim() || pickupLocation;
+        const isCrossLocationOriginal = {{ rental.is_cross_location_return|yesno:"true,false" }};
+        const originalReturnLocation = '{{ rental.return_location|default:""|escapejs }}';
+        
+        // 判断是否实际异地还车
+        const actualIsCrossLocation = actualReturnLocation && actualReturnLocation !== pickupLocation;
+        // 如果租车时未勾选异地还车，但实际异地还车了，需要增加费用
+        const needsCrossLocationFee = actualIsCrossLocation && !isCrossLocationOriginal;
         
         if (returnDate && startDate && endDate) {
             const baseDays = (endDate - startDate) / (1000 * 60 * 60 * 24) + 1;
@@ -231,13 +265,21 @@ $(document).ready(function() {
             const newAmount = baseAmount - discount;
             
             let extraDays = 0;
-            let extraAmount = 0;
+            let overdueAmount = 0;
+            let crossLocationFee = 0;
             let totalAmount = newAmount;
             
+            // 计算超时费用
             if (returnDate > endDate) {
-                extraDays = (returnDate - endDate) / (1000 * 60 * 60 * 24);
-                extraAmount = extraDays * dailyRate;
-                totalAmount += extraAmount;
+                extraDays = Math.floor((returnDate - endDate) / (1000 * 60 * 60 * 24));
+                overdueAmount = extraDays * dailyRate;
+                totalAmount += overdueAmount;
+            }
+            
+            // 计算异地还车费用（如果租车时未勾选但实际异地还车）
+            if (needsCrossLocationFee) {
+                crossLocationFee = dailyRate * 0.5; // 默认异地还车费用为日租金的50%
+                totalAmount += crossLocationFee;
             }
             
             let html = `
@@ -251,12 +293,14 @@ $(document).ready(function() {
                     <div class="col-md-6">
                         <h6>优惠和额外费用</h6>
                         ${isVip ? `<p class="mb-1 text-success">VIP折扣(10%): -¥${discount.toFixed(2)}</p>` : ''}
-                        <p class="mb-0">基础小计: ¥${newAmount.toFixed(2)}</p>
-                        ${extraDays > 0 ? `<hr><p class="mb-1">超期天数: ${extraDays}天</p><p class="mb-1">超期费用: +¥${extraAmount.toFixed(2)}</p>` : ''}
+                        <p class="mb-1">基础小计: ¥${newAmount.toFixed(2)}</p>
+                        ${extraDays > 0 ? `<hr><p class="mb-1 text-warning">超期天数: ${extraDays}天</p><p class="mb-1">超时还车费用: +¥${overdueAmount.toFixed(2)}</p>` : ''}
+                        ${needsCrossLocationFee ? `<hr><p class="mb-1 text-info">异地还车费用: +¥${crossLocationFee.toFixed(2)}</p><small class="text-muted">（还车门店与取车门店不同）</small>` : ''}
                         <hr>
                         <strong>最终费用: ¥${totalAmount.toFixed(2)}</strong>
                     </div>
                 </div>
+                ${actualIsCrossLocation && !needsCrossLocationFee ? '<div class="alert alert-info mt-2 mb-0"><small><i class="bi bi-info-circle"></i> 已预约异地还车，费用已包含</small></div>' : ''}
             `;
             
             $('#cost-details').html(html);

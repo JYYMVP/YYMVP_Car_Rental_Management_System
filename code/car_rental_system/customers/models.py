@@ -98,6 +98,60 @@ class Customer(models.Model):
             models.Index(fields=['member_level']),
         ]
     
+    def check_vip_upgrade_eligibility(self):
+        """
+        检查客户是否符合VIP升级条件
+        条件：连续10个已完成订单都满足：
+        1. 没有超时归还（overdue_fee == 0）
+        2. 没有不诚信的异地还车（选择了异地还车实际也异地还车，或没选择异地还车实际也没异地还车）
+        
+        返回：(是否符合条件, 连续诚信订单数)
+        """
+        from rentals.models import Rental
+        from decimal import Decimal
+        
+        # 获取所有已完成的订单，按创建时间倒序排列（最新的在前）
+        completed_rentals = Rental.objects.filter(
+            customer=self,
+            status='COMPLETED',
+            actual_return_date__isnull=False
+        ).order_by('-created_at')
+        
+        consecutive_good_count = 0
+        
+        # 从最近的订单开始检查，连续计数满足条件的订单
+        for rental in completed_rentals:
+            # 检查是否超时归还
+            has_overdue = rental.overdue_fee and rental.overdue_fee > Decimal('0.00')
+            
+            # 检查是否不诚信的异地还车
+            is_dishonest_cross_location = False
+            if rental.actual_return_location and rental.pickup_location:
+                actual_is_cross = rental.actual_return_location.strip() != rental.pickup_location.strip()
+                expected_is_cross = rental.is_cross_location_return
+                # 如果不匹配，说明不诚信
+                if actual_is_cross != expected_is_cross:
+                    is_dishonest_cross_location = True
+            
+            # 如果订单满足条件（没有超时且诚信）
+            if not has_overdue and not is_dishonest_cross_location:
+                consecutive_good_count += 1
+            else:
+                # 一旦遇到不满足条件的订单，就中断计数
+                break
+        
+        # 如果连续10个订单都满足条件
+        is_eligible = consecutive_good_count >= 10
+        return is_eligible, consecutive_good_count
+    
+    def upgrade_to_vip(self):
+        """将客户升级为VIP"""
+        if self.member_level != 'VIP':
+            self.member_level = 'VIP'
+            self.save(update_fields=['member_level', 'updated_at'])
+            return True
+        return False
+    
     def __str__(self):
         return f"{self.name} ({self.phone})"
     

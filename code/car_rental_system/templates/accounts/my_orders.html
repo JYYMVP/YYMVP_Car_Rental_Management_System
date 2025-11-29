@@ -3,6 +3,213 @@
 
 {% block title %}我的订单 - 租车管理系统{% endblock %}
 
+{% block extra_css %}
+<style>
+    /* 亮色主题配色 */
+    :root {
+        --primary-bright: #4A90E2;
+        --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        --success-bright: #52C41A;
+        --warning-bright: #FAAD14;
+        --info-bright: #13C2C2;
+        --card-shadow: 0 4px 20px rgba(102, 126, 234, 0.1);
+        --card-shadow-hover: 0 8px 30px rgba(102, 126, 234, 0.15);
+    }
+    
+    /* 统一按钮样式 - 更亮更现代 */
+    .btn {
+        min-height: 42px;
+        padding: 0.6rem 1.5rem;
+        font-size: 0.95rem;
+        font-weight: 600;
+        border-radius: 0.6rem;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        white-space: nowrap;
+        border: none;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+    
+    .btn i {
+        margin-right: 0.5rem;
+        font-size: 1rem;
+    }
+    
+    .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(0,0,0,0.15);
+    }
+    
+    .btn-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+    
+    .btn-primary:hover {
+        background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+        color: white;
+    }
+    
+    .btn-success {
+        background: linear-gradient(135deg, #52C41A 0%, #73d13d 100%);
+        color: white;
+    }
+    
+    .btn-outline-primary {
+        border: 2px solid #667eea;
+        color: #667eea;
+        background: white;
+    }
+    
+    .btn-outline-primary:hover {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-color: transparent;
+    }
+    
+    .btn-outline-secondary {
+        border: 2px solid #d9d9d9;
+        color: #595959;
+        background: white;
+    }
+    
+    .btn-outline-warning {
+        border: 2px solid #FAAD14;
+        color: #FAAD14;
+        background: white;
+    }
+    
+    .btn-outline-warning:hover {
+        background: linear-gradient(135deg, #FAAD14 0%, #FFC53D 100%);
+        color: white;
+        border-color: transparent;
+    }
+    
+    .btn-outline-danger {
+        border: 2px solid #ff4d4f;
+        color: #ff4d4f;
+        background: white;
+    }
+    
+    .btn-outline-danger:hover {
+        background: linear-gradient(135deg, #ff4d4f 0%, #ff7875 100%);
+        color: white;
+        border-color: transparent;
+    }
+    
+    .btn-sm {
+        min-height: 36px;
+        padding: 0.5rem 1rem;
+        font-size: 0.875rem;
+    }
+    
+    .btn-group-vertical .btn {
+        width: 100%;
+        margin-bottom: 0.5rem;
+    }
+    
+    .btn-group-vertical .btn:last-child {
+        margin-bottom: 0;
+    }
+    
+    /* 表格操作按钮统一 */
+    .table .btn {
+        min-width: 110px;
+    }
+    
+    /* 卡片美化 - 更亮的卡片 */
+    .card {
+        border-radius: 1.2rem;
+        border: none;
+        overflow: hidden;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        background: white;
+        box-shadow: var(--card-shadow);
+    }
+    
+    .card:hover {
+        box-shadow: var(--card-shadow-hover);
+        transform: translateY(-2px);
+    }
+    
+    .card-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        font-weight: 700;
+        border: none;
+    }
+    
+    /* 表格美化 - 更亮的样式 */
+    .table {
+        background: white;
+        border-radius: 1rem;
+        overflow: hidden;
+    }
+    
+    .table thead {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+    
+    .table thead th {
+        border: none;
+        padding: 1rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.85rem;
+        letter-spacing: 0.5px;
+    }
+    
+    .table tbody tr {
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        border-bottom: 1px solid #f0f0f0;
+    }
+    
+    .table tbody tr:hover {
+        background: linear-gradient(135deg, #fafbff 0%, #f0f4ff 100%);
+        transform: translateX(4px);
+        box-shadow: 0 2px 8px rgba(102, 126, 234, 0.1);
+    }
+    
+    .table tbody td {
+        padding: 1.25rem 1rem;
+        vertical-align: middle;
+    }
+    
+    /* 状态徽章美化 */
+    .badge {
+        padding: 0.5rem 0.875rem;
+        border-radius: 0.5rem;
+        font-weight: 600;
+        font-size: 0.85rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    /* 标题美化 */
+    h1 {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        font-weight: 700;
+    }
+    
+    /* 输入框和选择框美化 */
+    .form-control, .form-select {
+        border-radius: 0.6rem;
+        border: 2px solid #e8e8e8;
+        transition: all 0.3s ease;
+    }
+    
+    .form-control:focus, .form-select:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="profile-fullscreen">
     <div class="d-flex justify-content-between align-items-center mb-4">
@@ -39,7 +246,7 @@
                 </div>
                 <div class="col-md-2 d-flex align-items-end">
                     <button type="submit" class="btn btn-primary w-100">
-                        <i class="fas fa-search me-2"></i>搜索
+                        <i class="fas fa-search"></i>搜索
                     </button>
                 </div>
             </form>
@@ -47,8 +254,8 @@
     </div>
 
     <!-- 订单列表 -->
-    <div class="card shadow">
-        <div class="card-header bg-info text-white">
+    <div class="card shadow-sm">
+        <div class="card-header bg-info text-white" style="background: linear-gradient(135deg, #13C2C2 0%, #36CFC9 100%);">
             <h5 class="mb-0">
                 <i class="fas fa-receipt me-2"></i>订单列表
             </h5>
@@ -102,6 +309,8 @@
                                         <span class="badge bg-warning text-dark">预订中</span>
                                     {% elif rental.status == 'ONGOING' %}
                                         <span class="badge bg-info">进行中</span>
+                                    {% elif rental.status == 'OVERDUE' %}
+                                        <span class="badge bg-danger">已超时未归还</span>
                                     {% elif rental.status == 'COMPLETED' %}
                                         <span class="badge bg-success">已完成</span>
                                     {% elif rental.status == 'CANCELLED' %}
@@ -112,20 +321,25 @@
                                     <strong class="text-primary">¥{{ rental.total_amount|floatformat:2 }}</strong>
                                 </td>
                                 <td>
-                                    <div class="btn-group-vertical btn-group-sm" role="group">
+                                    <div class="btn-group-vertical" role="group">
                                         <a href="{% url 'accounts:order_detail' rental.pk %}" 
-                                           class="btn btn-outline-primary">
-                                            <i class="fas fa-eye me-1"></i>查看详情
+                                           class="btn btn-outline-primary btn-sm">
+                                            <i class="fas fa-eye"></i>查看详情
                                         </a>
                                         {% if rental.status == 'PENDING' %}
                                         <form method="post" action="{% url 'accounts:order_cancel' rental.pk %}" 
-                                              class="mt-1" 
                                               onsubmit="return confirm('确定要取消订单 #{{ rental.id }} 吗？');">
                                             {% csrf_token %}
-                                            <button type="submit" class="btn btn-outline-danger w-100">
-                                                <i class="fas fa-times me-1"></i>取消订单
+                                            <button type="submit" class="btn btn-outline-danger btn-sm w-100">
+                                                <i class="fas fa-times"></i>取消订单
                                             </button>
                                         </form>
+                                        {% endif %}
+                                        {% if rental.status == 'ONGOING' or rental.status == 'OVERDUE' %}
+                                        <a href="{% url 'accounts:order_return' rental.pk %}" 
+                                           class="btn btn-outline-warning btn-sm w-100">
+                                            <i class="fas fa-undo"></i>归还车辆
+                                        </a>
                                         {% endif %}
                                     </div>
                                 </td>

@@ -1,0 +1,28 @@
+"""
+本地配置文件示例
+复制此文件为 local_settings.py 并填写真实的配置信息
+local_settings.py 不会被提交到 Git 仓库
+"""
+
+# Django 密钥（生产环境必须更改）
+SECRET_KEY = 'your-secret-key-here-change-in-production'
+
+# 调试模式（生产环境设为 False）
+DEBUG = True
+
+# 允许的主机（生产环境需要指定具体域名）
+ALLOWED_HOSTS = ['localhost', '127.0.0.1']
+
+# 数据库配置
+# 如果需要使用其他数据库，可以在这里配置
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.postgresql',
+#         'NAME': 'your_database_name',
+#         'USER': 'your_database_user',
+#         'PASSWORD': 'your_database_password',
+#         'HOST': 'localhost',
+#         'PORT': '5432',
+#     }
+# }
+

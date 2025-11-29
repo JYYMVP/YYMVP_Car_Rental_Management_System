@@ -98,9 +98,14 @@
                         <!-- 取车地点 -->
                         <div class="mb-4">
                             <label for="{{ form.pickup_location.id_for_label }}" class="form-label fw-semibold">
-                                {{ form.pickup_location.label }} <span class="text-danger">*</span>
+                                <i class="fas fa-map-marker-alt me-1"></i>{{ form.pickup_location.label }} <span class="text-danger">*</span>
                             </label>
-                            {{ form.pickup_location }}
+                            <div class="input-group">
+                                {{ form.pickup_location }}
+                                <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#pickupStoreSelectModal">
+                                    <i class="fas fa-map"></i>选择门店
+                                </button>
+                            </div>
                             {% if form.pickup_location.errors %}
                                 <div class="text-danger small mt-1">
                                     {{ form.pickup_location.errors.0 }}
@@ -311,6 +316,146 @@
         }
     });
 </script>
+
+<!-- 取车门店选择模态框 -->
+<div class="modal fade" id="pickupStoreSelectModal" tabindex="-1" aria-labelledby="pickupStoreSelectModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="pickupStoreSelectModalLabel">
+                    <i class="fas fa-map-marker-alt me-2"></i>选择取车门店
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-4">
+                    <label for="pickupDistrictSelect" class="form-label fw-semibold">
+                        <i class="fas fa-city me-2"></i>选择区域
+                    </label>
+                    <select id="pickupDistrictSelect" class="form-select">
+                        <option value="">请选择区域</option>
+                        {% for district in districts %}
+                        <option value="{{ district }}">{{ district }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="mb-4">
+                    <label for="pickupStoreSelect" class="form-label fw-semibold">
+                        <i class="fas fa-store me-2"></i>选择门店
+                    </label>
+                    <select id="pickupStoreSelect" class="form-select" disabled>
+                        <option value="">请先选择区域</option>
+                    </select>
+                </div>
+                
+                <div id="pickupStoreInfo" class="alert alert-light mb-4" style="display: none; background: var(--bg-light); border: 1px solid var(--border-color);">
+                    <small class="text-muted">
+                        <i class="fas fa-info-circle me-1" style="color: var(--primary-color);"></i>
+                        已选择：<span id="selectedPickupStoreName" class="fw-semibold" style="color: var(--text-primary);"></span>
+                    </small>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times"></i>取消
+                </button>
+                <button type="button" class="btn btn-primary ms-2" onclick="confirmPickupStoreSelection()">
+                    <i class="fas fa-check"></i>确认选择
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+<script>
+// 取车门店数据
+const pickupStoreData = {
+    {% for district, stores in store_locations.items %}
+    "{{ district }}": [
+        {% for store in stores %}
+        "{{ store }}"{% if not forloop.last %},{% endif %}
+        {% endfor %}
+    ]{% if not forloop.last %},{% endif %}
+    {% endfor %}
+};
+
+// 区域选择变化时更新门店列表
+$('#pickupDistrictSelect').on('change', function() {
+    const selectedDistrict = $(this).val();
+    const storeSelect = $('#pickupStoreSelect');
+    
+    if (selectedDistrict && pickupStoreData[selectedDistrict]) {
+        // 启用门店下拉框
+        storeSelect.prop('disabled', false);
+        storeSelect.html('<option value="">请选择门店</option>');
+        
+        // 填充该区的门店
+        pickupStoreData[selectedDistrict].forEach(function(store) {
+            storeSelect.append(`<option value="${store}">${store}</option>`);
+        });
+        
+        $('#pickupStoreInfo').hide();
+    } else {
+        // 禁用门店下拉框
+        storeSelect.prop('disabled', true);
+        storeSelect.html('<option value="">请先选择区域</option>');
+        $('#pickupStoreInfo').hide();
+    }
+});
+
+// 门店选择变化时
+$('#pickupStoreSelect').on('change', function() {
+    const selectedStore = $(this).val();
+    if (selectedStore) {
+        $('#selectedPickupStoreName').text(selectedStore);
+        $('#pickupStoreInfo').show();
+    } else {
+        $('#pickupStoreInfo').hide();
+    }
+});
+
+// 确认选择取车门店
+function confirmPickupStoreSelection() {
+    const selectedStore = $('#pickupStoreSelect').val();
+    if (selectedStore) {
+        $('#id_pickup_location').val(selectedStore);
+        // 使用Bootstrap 5原生API关闭模态框
+        const modalElement = document.getElementById('pickupStoreSelectModal');
+        if (typeof bootstrap !== 'undefined') {
+            const modalInstance = bootstrap.Modal.getInstance(modalElement);
+            if (modalInstance) {
+                modalInstance.hide();
+            } else {
+                const bsModal = new bootstrap.Modal(modalElement);
+                bsModal.hide();
+            }
+        } else {
+            modalElement.classList.remove('show');
+            document.body.classList.remove('modal-open');
+            const backdrop = document.querySelector('.modal-backdrop');
+            if (backdrop) backdrop.remove();
+        }
+        // 重置下拉框状态
+        $('#pickupDistrictSelect').val('');
+        $('#pickupStoreSelect').prop('disabled', true).html('<option value="">请先选择区域</option>');
+        $('#pickupStoreInfo').hide();
+    } else {
+        alert('请先选择门店');
+    }
+}
+
+// 模态框打开时重置下拉框
+document.addEventListener('DOMContentLoaded', function() {
+    const modalElement = document.getElementById('pickupStoreSelectModal');
+    if (modalElement) {
+        modalElement.addEventListener('show.bs.modal', function() {
+            $('#pickupDistrictSelect').val('');
+            $('#pickupStoreSelect').prop('disabled', true).html('<option value="">请先选择区域</option>');
+            $('#pickupStoreInfo').hide();
+        });
+    }
+});
+</script>
 {% endblock %}
-
-

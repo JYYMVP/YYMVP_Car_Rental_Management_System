@@ -99,6 +99,16 @@ def customer_detail(request, pk):
     if customer.member_level == 'VIP' and total_amount:
         vip_discount_amount = total_amount * Decimal('0.1')
     
+    # 检查是否符合VIP升级条件（如果不是VIP）
+    vip_upgrade_info = None
+    if customer.member_level != 'VIP':
+        is_eligible, consecutive_count = customer.check_vip_upgrade_eligibility()
+        vip_upgrade_info = {
+            'is_eligible': is_eligible,
+            'consecutive_count': consecutive_count,
+            'remaining': max(0, 10 - consecutive_count)
+        }
+    
     context = {
         'customer': customer,
         'rentals': rentals,
@@ -106,6 +116,7 @@ def customer_detail(request, pk):
         'total_amount': total_amount,
         'status_stats': status_stats,
         'vip_discount_amount': vip_discount_amount,
+        'vip_upgrade_info': vip_upgrade_info,
     }
     return render(request, 'customers/customer_detail.html', context)
 

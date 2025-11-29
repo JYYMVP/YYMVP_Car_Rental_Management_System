@@ -85,6 +85,8 @@
                                     <span class="badge bg-info">预订中</span>
                                 {% elif rental.status == 'ONGOING' %}
                                     <span class="badge bg-warning">进行中</span>
+                                {% elif rental.status == 'OVERDUE' %}
+                                    <span class="badge bg-danger">已超时未归还</span>
                                 {% elif rental.status == 'COMPLETED' %}
                                     <span class="badge bg-success">已完成</span>
                                 {% elif rental.status == 'CANCELLED' %}

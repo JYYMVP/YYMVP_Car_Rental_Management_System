@@ -206,32 +206,21 @@ class RentalForm(forms.ModelForm):
             cleaned_data['return_location'] = None
             cleaned_data['cross_location_fee'] = Decimal('0.00')
         
-        # 检查客户时间冲突
-        if customer and start_date and end_date:
-            conflicts = Rental.objects.filter(
-                customer=customer,
-                status__in=['PENDING', 'ONGOING']  # 预订中或进行中的订单
-            ).exclude(pk=self.instance.pk)
-            
-            for rental in conflicts:
-                # 检查时间是否重叠
-                if not (end_date < rental.start_date or start_date > rental.end_date):
-                    raise ValidationError(
-                        f'客户 {customer.name} 在此时间段已有租赁订单'
-                    )
+        # 允许同一客户在同一时间段有多个订单（例如：客户可能同时租用多辆车）
+        # 因此不检查客户时间冲突
         
-        # 检查车辆时间冲突
+        # 检查车辆时间冲突（同一辆车在同一时间段只能租给一个客户）
         if vehicle and start_date and end_date:
             conflicts = Rental.objects.filter(
                 vehicle=vehicle,
-                status__in=['PENDING', 'ONGOING']  # 预订中或进行中的订单
+                status__in=['PENDING', 'ONGOING', 'OVERDUE']  # 预订中、进行中或已超时未归还的订单
             ).exclude(pk=self.instance.pk)
             
             for rental in conflicts:
                 # 检查时间是否重叠
                 if not (end_date < rental.start_date or start_date > rental.end_date):
                     raise ValidationError(
-                        f'车辆 {vehicle} 在此时间段已被租赁'
+                        f'车辆 {vehicle.license_plate} 在 {rental.start_date} 至 {rental.end_date} 时间段已被租赁'
                     )
         
         return cleaned_data
@@ -283,6 +272,16 @@ class ReturnForm(forms.Form):
             'required': True
         })
     )
+    actual_return_location = forms.CharField(
+        label='实际还车门店',
+        max_length=200,
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': '请输入实际还车门店，如：北京门店',
+            'maxlength': 200
+        })
+    )
     
     def clean_actual_return_date(self):
         """验证还车日期"""
@@ -294,6 +293,13 @@ class ReturnForm(forms.Form):
             raise ValidationError('还车日期不能晚于今天')
         
         return actual_return_date
+    
+    def clean_actual_return_location(self):
+        """验证还车门店"""
+        actual_return_location = self.cleaned_data.get('actual_return_location', '').strip()
+        if not actual_return_location:
+            return None
+        return actual_return_location
 
 
 class CancelForm(forms.Form):

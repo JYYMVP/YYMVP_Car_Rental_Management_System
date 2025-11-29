@@ -1,0 +1,734 @@
+{% extends "base_user.html" %}
+{% load static %}
+
+{% block title %}归还车辆 - 租车管理系统{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* 商务风格亮色主题配色 */
+    :root {
+        --primary-color: #1890FF;
+        --primary-light: #E6F7FF;
+        --primary-dark: #0050B3;
+        --success-color: #52C41A;
+        --warning-color: #FAAD14;
+        --info-color: #13C2C2;
+        --text-primary: #262626;
+        --text-secondary: #8C8C8C;
+        --bg-light: #FAFAFA;
+        --bg-card: #FFFFFF;
+        --border-color: #E8E8E8;
+        --card-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+        --card-shadow-hover: 0 4px 20px rgba(0, 0, 0, 0.12);
+    }
+    
+    /* 统一按钮样式 - 商务风格 */
+    .btn {
+        min-height: 40px;
+        padding: 0.6rem 1.5rem;
+        font-size: 0.95rem;
+        font-weight: 500;
+        border-radius: 0.5rem;
+        transition: all 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        white-space: nowrap;
+        border: 1px solid transparent;
+    }
+    
+    .btn i {
+        margin-right: 0.5rem;
+        font-size: 0.95rem;
+    }
+    
+    .btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+    
+    .btn-primary {
+        background: var(--primary-color);
+        color: white;
+        border-color: var(--primary-color);
+    }
+    
+    .btn-primary:hover {
+        background: var(--primary-dark);
+        border-color: var(--primary-dark);
+        color: white;
+    }
+    
+    .btn-success {
+        background: var(--success-color);
+        color: white;
+        border-color: var(--success-color);
+    }
+    
+    .btn-success:hover {
+        background: #389E0D;
+        border-color: #389E0D;
+        color: white;
+    }
+    
+    .btn-warning {
+        background: var(--warning-color);
+        color: white;
+        border-color: var(--warning-color);
+    }
+    
+    .btn-warning:hover {
+        background: #D48806;
+        border-color: #D48806;
+        color: white;
+    }
+    
+    .btn-outline-primary {
+        border: 1px solid var(--primary-color);
+        color: var(--primary-color);
+        background: white;
+    }
+    
+    .btn-outline-primary:hover {
+        background: var(--primary-color);
+        color: white;
+        border-color: var(--primary-color);
+    }
+    
+    .btn-outline-secondary {
+        border: 1px solid var(--border-color);
+        color: var(--text-secondary);
+        background: white;
+    }
+    
+    .btn-outline-secondary:hover {
+        background: var(--bg-light);
+        border-color: #BFBFBF;
+        color: var(--text-primary);
+    }
+    
+    .btn-outline-warning {
+        border: 1px solid var(--warning-color);
+        color: var(--warning-color);
+        background: white;
+    }
+    
+    .btn-outline-warning:hover {
+        background: var(--warning-color);
+        color: white;
+        border-color: var(--warning-color);
+    }
+    
+    /* 输入框样式优化 - 商务风格 */
+    .form-control, .form-select {
+        min-height: 40px;
+        border-radius: 0.5rem;
+        border: 1px solid var(--border-color);
+        padding: 0.6rem 1rem;
+        transition: all 0.2s ease;
+        background: white;
+        font-size: 0.95rem;
+        color: var(--text-primary);
+    }
+    
+    .form-control:focus, .form-select:focus {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.1);
+        background: white;
+        outline: none;
+    }
+    
+    /* 卡片美化 - 商务风格 */
+    .card {
+        border-radius: 0.75rem;
+        border: 1px solid var(--border-color);
+        overflow: hidden;
+        transition: all 0.2s ease;
+        background: var(--bg-card);
+        box-shadow: var(--card-shadow);
+    }
+    
+    .card:hover {
+        box-shadow: var(--card-shadow-hover);
+        transform: translateY(-1px);
+    }
+    
+    .card-header {
+        border-bottom: 1px solid var(--border-color);
+        padding: 1rem 1.5rem;
+        font-weight: 600;
+        font-size: 1rem;
+        background: var(--primary-color);
+        color: white;
+    }
+    
+    .card-header.bg-warning {
+        background: var(--warning-color);
+        color: white;
+    }
+    
+    /* 门店选择按钮 - 商务风格 */
+    .store-btn {
+        min-height: 44px;
+        padding: 0.75rem 1rem;
+        margin-bottom: 0.5rem;
+        text-align: left;
+        border-radius: 0.5rem;
+        transition: all 0.2s ease;
+        font-weight: 500;
+        border: 1px solid var(--border-color);
+        background: white;
+        color: var(--text-primary);
+    }
+    
+    .store-btn:hover {
+        transform: translateX(3px);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        border-color: var(--primary-color);
+        background: var(--primary-light);
+        color: var(--primary-dark);
+    }
+    
+    .store-btn.btn-primary {
+        background: var(--primary-color);
+        border-color: var(--primary-color);
+        color: white;
+    }
+    
+    /* 费用预览卡片 - 商务风格 */
+    #cost-preview {
+        border-radius: 0.5rem;
+        background: var(--bg-light);
+        border: 1px solid var(--border-color);
+    }
+    
+    /* 模态框优化 - 商务风格 */
+    .modal-content {
+        border-radius: 0.75rem;
+        border: 1px solid var(--border-color);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+    }
+    
+    .modal-header {
+        border-bottom: 1px solid var(--border-color);
+        padding: 1.25rem 1.5rem;
+        background: white;
+    }
+    
+    .modal-footer {
+        border-top: 1px solid var(--border-color);
+        padding: 1rem 1.5rem;
+        background: var(--bg-light);
+    }
+    
+    /* 信息展示优化 - 商务风格 */
+    .info-item {
+        padding: 1rem 1.25rem;
+        background: var(--bg-light);
+        border-radius: 0.5rem;
+        margin-bottom: 0.75rem;
+        transition: all 0.2s ease;
+        border-left: 3px solid var(--primary-color);
+    }
+    
+    .info-item:hover {
+        background: var(--primary-light);
+        transform: translateX(3px);
+        border-left-color: var(--primary-dark);
+    }
+    
+    .info-item .text-muted {
+        color: var(--text-secondary) !important;
+        font-size: 0.85rem;
+    }
+    
+    .info-item .fw-semibold {
+        color: var(--text-primary);
+        font-size: 0.95rem;
+    }
+    
+    /* 操作按钮组统一 */
+    .action-buttons {
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+    
+    .action-buttons .btn {
+        flex: 0 0 auto;
+        min-width: 140px;
+    }
+    
+    /* 标题美化 - 商务风格 */
+    h1 {
+        color: var(--primary-color);
+        font-weight: 600;
+        font-size: 1.75rem;
+    }
+    
+    /* 标签美化 - 商务风格 */
+    .badge {
+        padding: 0.4rem 0.75rem;
+        border-radius: 0.25rem;
+        font-weight: 500;
+        font-size: 0.8rem;
+    }
+    
+    /* 警告框美化 - 商务风格 */
+    .alert {
+        border-radius: 0.5rem;
+        border: 1px solid var(--border-color);
+    }
+    
+    .alert-info {
+        background: var(--primary-light);
+        border-left: 3px solid var(--info-color);
+        color: var(--primary-dark);
+    }
+    
+    /* 手风琴样式优化 - 商务风格 */
+    .accordion-item {
+        border: 1px solid var(--border-color);
+        margin-bottom: 0.5rem;
+        border-radius: 0.5rem;
+        overflow: hidden;
+    }
+    
+    .accordion-button {
+        background: var(--bg-light);
+        border: none;
+        font-weight: 500;
+        color: var(--text-primary);
+    }
+    
+    .accordion-button:not(.collapsed) {
+        background: var(--primary-color);
+        color: white;
+        box-shadow: none;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="profile-fullscreen">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="mb-2">
+                <i class="fas fa-undo me-2 text-warning"></i>归还车辆
+            </h1>
+            <p class="text-muted mb-0">
+                <i class="fas fa-hashtag me-1"></i>订单号：#{{ rental.id }}
+            </p>
+        </div>
+        <a href="{% url 'accounts:order_detail' rental.id %}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left"></i>返回订单详情
+        </a>
+    </div>
+
+    <!-- 订单信息卡片 -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>订单信息</h5>
+        </div>
+        <div class="card-body p-4">
+            <div class="row g-4">
+                <div class="col-md-6">
+                    <div class="info-item">
+                        <div class="text-muted small mb-1">
+                            <i class="fas fa-car me-2" style="color: var(--primary-color);"></i>车辆信息
+                        </div>
+                        <div class="fw-semibold" style="color: var(--text-primary);">
+                            {{ rental.vehicle.brand }} {{ rental.vehicle.model }}
+                        </div>
+                        <div class="text-muted small mt-1">
+                            车牌号：{{ rental.vehicle.license_plate }}
+                        </div>
+                    </div>
+                    <div class="info-item">
+                        <div class="text-muted small mb-1">
+                            <i class="fas fa-map-marker-alt me-2" style="color: var(--primary-color);"></i>取车门店
+                        </div>
+                        <div class="fw-semibold" style="color: var(--text-primary);">{{ rental.pickup_location }}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="text-muted small mb-1">
+                            <i class="fas fa-calendar-check me-2" style="color: var(--primary-color);"></i>计划结束日期
+                        </div>
+                        <div class="fw-semibold" style="color: var(--text-primary);">{{ rental.end_date|date:"Y年m月d日" }}</div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="info-item">
+                        <div class="text-muted small mb-1">
+                            <i class="fas fa-calendar-day me-2" style="color: var(--primary-color);"></i>租赁开始日期
+                        </div>
+                        <div class="fw-semibold" style="color: var(--text-primary);">{{ rental.start_date|date:"Y年m月d日" }}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="text-muted small mb-1">
+                            <i class="fas fa-clock me-2" style="color: var(--primary-color);"></i>租赁天数
+                        </div>
+                        <div class="fw-semibold" style="color: var(--text-primary);">{{ rental.rental_days }} 天</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="text-muted small mb-1">
+                            <i class="fas fa-yen-sign me-2" style="color: var(--primary-color);"></i>日租金
+                        </div>
+                        <div class="fw-semibold" style="color: var(--success-color);">
+                            ¥{{ rental.vehicle.daily_rate|floatformat:2 }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 还车表单 -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-warning text-dark">
+            <h5 class="mb-0"><i class="fas fa-arrow-return-left me-2"></i>还车信息</h5>
+        </div>
+        <div class="card-body">
+            <form method="post" id="returnForm">
+                {% csrf_token %}
+                
+                <div class="mb-4">
+                    <label for="{{ form.actual_return_date.id_for_label }}" class="form-label fw-semibold">
+                        <i class="fas fa-calendar-day me-1"></i>{{ form.actual_return_date.label }}
+                        <span class="text-danger">*</span>
+                    </label>
+                    {{ form.actual_return_date }}
+                    {% if form.actual_return_date.errors %}
+                        <div class="text-danger small mt-1">
+                            {{ form.actual_return_date.errors.0 }}
+                        </div>
+                    {% endif %}
+                    <div class="form-text">
+                        还车日期不能晚于今天
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label for="{{ form.actual_return_location.id_for_label }}" class="form-label fw-semibold">
+                        <i class="fas fa-map-marker-alt me-1"></i>{{ form.actual_return_location.label }}
+                    </label>
+                    <div class="input-group">
+                        {{ form.actual_return_location }}
+                        <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#storeSelectModal">
+                            <i class="fas fa-map"></i>选择门店
+                        </button>
+                    </div>
+                    {% if form.actual_return_location.errors %}
+                        <div class="text-danger small mt-1">
+                            {{ form.actual_return_location.errors.0 }}
+                        </div>
+                    {% endif %}
+                    <div class="form-text">
+                        实际还车门店，如不填写则默认使用取车门店（{{ rental.pickup_location }}）。如果还车门店与取车门店不同，将自动计算异地还车费用。
+                    </div>
+                </div>
+
+                <!-- 费用预览 -->
+                <div class="card border shadow-sm mb-4" id="cost-preview" style="display: none;">
+                    <div class="card-body">
+                        <h6 class="card-title fw-semibold mb-3" style="color: var(--primary-color);">
+                            <i class="fas fa-calculator me-2"></i>费用预览
+                        </h6>
+                        <div id="cost-details"></div>
+                    </div>
+                </div>
+
+                <div class="alert alert-info">
+                    <h6 class="alert-heading">
+                        <i class="fas fa-info-circle me-2"></i>温馨提示
+                    </h6>
+                    <ul class="mb-0 ps-3">
+                        <li>归还后订单将标记为"已完成"</li>
+                        <li>超期还车将按日租金计算超时费用</li>
+                        <li>如果还车门店与取车门店不同，且租车时未预约异地还车，将增加异地还车费用</li>
+                        <li>请检查车辆状况并确认相关费用</li>
+                    </ul>
+                </div>
+
+                <div class="action-buttons justify-content-end pt-4 border-top">
+                    <a href="{% url 'accounts:order_detail' rental.id %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-times"></i>取消
+                    </a>
+                    <button type="submit" class="btn btn-success" onclick="return confirm('确认办理车辆归还？')">
+                        <i class="fas fa-check-circle"></i>确认归还
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+    <!-- 门店选择模态框 -->
+<div class="modal fade" id="storeSelectModal" tabindex="-1" aria-labelledby="storeSelectModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="storeSelectModalLabel">
+                    <i class="fas fa-map-marker-alt me-2"></i>选择还车门店
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-4">
+                    <label for="districtSelect" class="form-label fw-semibold">
+                        <i class="fas fa-city me-2"></i>选择区域
+                    </label>
+                    <select id="districtSelect" class="form-select">
+                        <option value="">请选择区域</option>
+                        {% for district in districts %}
+                        <option value="{{ district }}">{{ district }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="mb-4">
+                    <label for="storeSelect" class="form-label fw-semibold">
+                        <i class="fas fa-store me-2"></i>选择门店
+                    </label>
+                    <select id="storeSelect" class="form-select" disabled>
+                        <option value="">请先选择区域</option>
+                    </select>
+                </div>
+                
+                <div id="storeInfo" class="alert alert-light mb-4" style="display: none; background: var(--bg-light); border: 1px solid var(--border-color);">
+                    <small class="text-muted">
+                        <i class="fas fa-info-circle me-1" style="color: var(--primary-color);"></i>
+                        已选择：<span id="selectedStoreName" class="fw-semibold" style="color: var(--text-primary);"></span>
+                    </small>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-primary" onclick="usePickupLocation()">
+                    <i class="fas fa-home"></i>使用取车门店
+                </button>
+                <div class="ms-auto">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times"></i>取消
+                    </button>
+                    <button type="button" class="btn btn-primary ms-2" onclick="confirmStoreSelection()">
+                        <i class="fas fa-check"></i>确认选择
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+<script>
+// 确保Bootstrap已加载
+function waitForBootstrap(callback) {
+    if (typeof bootstrap !== 'undefined') {
+        callback();
+    } else {
+        setTimeout(function() {
+            waitForBootstrap(callback);
+        }, 100);
+    }
+}
+// 全局函数：更新费用预览
+function updateCostPreview() {
+    const returnDateInput = $('#id_actual_return_date').val();
+    if (!returnDateInput) {
+        $('#cost-preview').hide();
+        return;
+    }
+    
+    const returnDate = new Date(returnDateInput);
+    const endDate = new Date('{{ rental.end_date|date:"Y-m-d" }}');
+    const startDate = new Date('{{ rental.start_date|date:"Y-m-d" }}');
+    const dailyRate = parseFloat({{ rental.vehicle.daily_rate }});
+    const isVip = '{{ rental.customer.member_level }}' === 'VIP';
+    const pickupLocation = '{{ rental.pickup_location|escapejs }}';
+    const actualReturnLocation = $('#id_actual_return_location').val().trim() || pickupLocation;
+    const isCrossLocationOriginal = {{ rental.is_cross_location_return|yesno:"true,false" }};
+    
+    // 判断是否实际异地还车
+    const actualIsCrossLocation = actualReturnLocation && actualReturnLocation !== pickupLocation;
+    // 如果租车时未勾选异地还车，但实际异地还车了，需要增加费用
+    const needsCrossLocationFee = actualIsCrossLocation && !isCrossLocationOriginal;
+    
+    if (returnDate && startDate && endDate) {
+        const baseDays = Math.floor((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+        const baseAmount = baseDays * dailyRate;
+        const discount = isVip ? baseAmount * 0.1 : 0;
+        const newAmount = baseAmount - discount;
+        
+        let extraDays = 0;
+        let overdueAmount = 0;
+        let crossLocationFee = 0;
+        let totalAmount = newAmount;
+        
+        // 计算超时费用
+        if (returnDate > endDate) {
+            extraDays = Math.floor((returnDate - endDate) / (1000 * 60 * 60 * 24));
+            overdueAmount = extraDays * dailyRate;
+            totalAmount += overdueAmount;
+        }
+        
+        // 计算异地还车费用（如果租车时未勾选但实际异地还车）
+        if (needsCrossLocationFee) {
+            crossLocationFee = dailyRate * 0.5;
+            totalAmount += crossLocationFee;
+        }
+        
+        let html = `
+            <div class="row">
+                <div class="col-md-6">
+                    <h6>基础费用</h6>
+                    <p class="mb-1">计划天数: ${baseDays}天</p>
+                    <p class="mb-1">日租金: ¥${dailyRate.toFixed(2)}</p>
+                    <p class="mb-0">基础费用: ¥${baseAmount.toFixed(2)}</p>
+                </div>
+                <div class="col-md-6">
+                    <h6>优惠和额外费用</h6>
+                    ${isVip ? `<p class="mb-1 text-success">VIP折扣(10%): -¥${discount.toFixed(2)}</p>` : ''}
+                    <p class="mb-1">基础小计: ¥${newAmount.toFixed(2)}</p>
+                    ${extraDays > 0 ? `<hr><p class="mb-1 text-warning">超期天数: ${extraDays}天</p><p class="mb-1">超时还车费用: +¥${overdueAmount.toFixed(2)}</p>` : ''}
+                    ${needsCrossLocationFee ? `<hr><p class="mb-1 text-info">异地还车费用: +¥${crossLocationFee.toFixed(2)}</p><small class="text-muted">（还车门店与取车门店不同）</small>` : ''}
+                    <hr>
+                    <strong>最终费用: ¥${totalAmount.toFixed(2)}</strong>
+                </div>
+            </div>
+            ${actualIsCrossLocation && !needsCrossLocationFee ? '<div class="alert alert-info mt-2 mb-0"><small><i class="fas fa-info-circle"></i> 已预约异地还车，费用已包含</small></div>' : ''}
+        `;
+        
+        $('#cost-details').html(html);
+        $('#cost-preview').show();
+    }
+}
+
+// 门店数据
+const storeData = {
+    {% for district, stores in store_locations.items %}
+    "{{ district }}": [
+        {% for store in stores %}
+        "{{ store }}"{% if not forloop.last %},{% endif %}
+        {% endfor %}
+    ]{% if not forloop.last %},{% endif %}
+    {% endfor %}
+};
+
+// 区域选择变化时更新门店列表
+$('#districtSelect').on('change', function() {
+    const selectedDistrict = $(this).val();
+    const storeSelect = $('#storeSelect');
+    
+    if (selectedDistrict && storeData[selectedDistrict]) {
+        // 启用门店下拉框
+        storeSelect.prop('disabled', false);
+        storeSelect.html('<option value="">请选择门店</option>');
+        
+        // 填充该区的门店
+        storeData[selectedDistrict].forEach(function(store) {
+            storeSelect.append(`<option value="${store}">${store}</option>`);
+        });
+        
+        $('#storeInfo').hide();
+    } else {
+        // 禁用门店下拉框
+        storeSelect.prop('disabled', true);
+        storeSelect.html('<option value="">请先选择区域</option>');
+        $('#storeInfo').hide();
+    }
+});
+
+// 门店选择变化时
+$('#storeSelect').on('change', function() {
+    const selectedStore = $(this).val();
+    if (selectedStore) {
+        $('#selectedStoreName').text(selectedStore);
+        $('#storeInfo').show();
+    } else {
+        $('#storeInfo').hide();
+    }
+});
+
+// 关闭模态框的通用函数
+function closeStoreModal() {
+    const modalElement = document.getElementById('storeSelectModal');
+    if (!modalElement) return;
+    
+    waitForBootstrap(function() {
+        try {
+            const modalInstance = bootstrap.Modal.getInstance(modalElement);
+            if (modalInstance) {
+                modalInstance.hide();
+            } else {
+                const bsModal = new bootstrap.Modal(modalElement);
+                bsModal.hide();
+            }
+        } catch (e) {
+            console.error('关闭模态框失败:', e);
+            // 降级处理
+            modalElement.classList.remove('show');
+            document.body.classList.remove('modal-open');
+            const backdrop = document.querySelector('.modal-backdrop');
+            if (backdrop) backdrop.remove();
+        }
+    });
+}
+
+// 确认选择门店
+function confirmStoreSelection() {
+    const selectedStore = $('#storeSelect').val();
+    if (selectedStore) {
+        $('#id_actual_return_location').val(selectedStore);
+        closeStoreModal();
+        updateCostPreview();
+        // 重置下拉框状态
+        $('#districtSelect').val('');
+        $('#storeSelect').prop('disabled', true).html('<option value="">请先选择区域</option>');
+        $('#storeInfo').hide();
+    } else {
+        alert('请先选择门店');
+    }
+}
+
+// 使用取车门店
+function usePickupLocation() {
+    $('#id_actual_return_location').val('{{ rental.pickup_location|escapejs }}');
+    closeStoreModal();
+    updateCostPreview();
+    // 重置下拉框状态
+    $('#districtSelect').val('');
+    $('#storeSelect').prop('disabled', true).html('<option value="">请先选择区域</option>');
+    $('#storeInfo').hide();
+}
+
+// 模态框打开时重置下拉框 - 使用Bootstrap 5事件
+document.addEventListener('DOMContentLoaded', function() {
+    const modalElement = document.getElementById('storeSelectModal');
+    if (modalElement) {
+        modalElement.addEventListener('show.bs.modal', function() {
+            $('#districtSelect').val('');
+            $('#storeSelect').prop('disabled', true).html('<option value="">请先选择区域</option>');
+            $('#storeInfo').hide();
+        });
+    }
+});
+
+$(document).ready(function() {
+    // 初始化费用预览
+    updateCostPreview();
+    
+    // 还车日期变化时重新计算
+    $('#id_actual_return_date').on('change', function() {
+        updateCostPreview();
+    });
+    
+    // 还车门店变化时重新计算
+    $('#id_actual_return_location').on('change input', function() {
+        updateCostPreview();
+    });
+});
+</script>
+{% endblock %}

@@ -123,6 +123,98 @@
             </div>
         </div>
 
+        <!-- 车辆评价 -->
+        {% if review_stats.total %}
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-star"></i> 用户评价</h5>
+                {% if review_stats.total > 0 %}
+                <div class="d-flex align-items-center gap-3">
+                    <div class="text-center">
+                        <div class="h5 mb-0 text-warning">
+                            {% if review_stats.average_rating %}
+                                {{ review_stats.average_rating|floatformat:1 }}
+                            {% else %}
+                                0.0
+                            {% endif %}
+                            <i class="bi bi-star-fill text-warning"></i>
+                        </div>
+                        <small class="text-muted">平均评分</small>
+                    </div>
+                    <div class="text-center">
+                        <div class="h5 mb-0 text-primary">{{ review_stats.total|default:0 }}</div>
+                        <small class="text-muted">评价总数</small>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+            <div class="card-body">
+                {% if review_stats.total > 0 %}
+                    <!-- 评分分布 -->
+                    {% if rating_distribution %}
+                    <div class="mb-4">
+                        <h6 class="mb-3">评分分布</h6>
+                        {% for dist in rating_distribution %}
+                        <div class="d-flex align-items-center mb-2">
+                            <div class="flex-shrink-0" style="width: 50px;">
+                                <span class="text-muted">{{ dist.rating }}星</span>
+                            </div>
+                            <div class="flex-grow-1 mx-3">
+                                <div class="progress" style="height: 20px;">
+                                    {% if dist.percentage > 0 %}
+                                    <div class="progress-bar bg-warning" role="progressbar" 
+                                         style="width: {{ dist.percentage }}%">
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="flex-shrink-0" style="width: 40px; text-align: right;">
+                                <span class="text-muted small">{{ dist.count }}</span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+
+                    <!-- 最近评价列表 -->
+                    <div>
+                        <h6 class="mb-3">最近评价</h6>
+                        {% for review in recent_reviews %}
+                        <div class="border rounded p-3 mb-3">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <div>
+                                    <strong class="text-primary">{{ review.user.username }}</strong>
+                                    <span class="text-muted small ms-2">{{ review.created_at|date:"Y-m-d H:i" }}</span>
+                                </div>
+                                <div>
+                                    {% for i in "12345"|make_list %}
+                                        {% if forloop.counter <= review.rating %}
+                                            <i class="bi bi-star-fill text-warning"></i>
+                                        {% else %}
+                                            <i class="bi bi-star text-warning"></i>
+                                        {% endif %}
+                                    {% endfor %}
+                                    <span class="text-muted small ms-1">{{ review.rating }}星</span>
+                                </div>
+                            </div>
+                            {% if review.comment %}
+                                <p class="mb-0 text-muted">{{ review.comment }}</p>
+                            {% else %}
+                                <p class="mb-0 text-muted"><em>用户未填写评价内容</em></p>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="bi bi-star" style="font-size: 2rem; color: #ccc;"></i>
+                        <p class="text-muted mt-2">暂无用户评价</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
         <!-- 租赁历史 -->
         <div class="card">
             <div class="card-header">
@@ -155,6 +247,8 @@
                                         <span class="badge bg-warning">预订中</span>
                                     {% elif rental.status == 'ONGOING' %}
                                         <span class="badge bg-success">进行中</span>
+                                    {% elif rental.status == 'OVERDUE' %}
+                                        <span class="badge bg-danger">已超时未归还</span>
                                     {% elif rental.status == 'COMPLETED' %}
                                         <span class="badge bg-secondary">已完成</span>
                                     {% elif rental.status == 'CANCELLED' %}

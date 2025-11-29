@@ -106,6 +106,48 @@
         </div>
     </div>
     
+    <!-- VIP升级信息 -->
+    {% if vip_upgrade_info %}
+    <div class="col-12 mb-4">
+        <div class="card shadow-sm border-{% if vip_upgrade_info.is_eligible %}success{% else %}info{% endif %}">
+            <div class="card-header bg-{% if vip_upgrade_info.is_eligible %}success{% else %}info{% endif %} text-white">
+                <h5 class="mb-0">
+                    <i class="bi bi-star{% if vip_upgrade_info.is_eligible %}-fill{% endif %} me-2"></i>
+                    VIP升级资格
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if vip_upgrade_info.is_eligible %}
+                    <div class="alert alert-success mb-0">
+                        <i class="bi bi-check-circle me-2"></i>
+                        <strong>恭喜！</strong>该客户已满足VIP升级条件（连续{{ vip_upgrade_info.consecutive_count }}个订单表现优异），系统将在下次还车时自动升级为VIP会员。
+                    </div>
+                {% else %}
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="mb-1">
+                                <i class="bi bi-info-circle me-2"></i>
+                                <strong>VIP升级条件：</strong>连续10个已完成订单都满足以下条件：
+                            </p>
+                            <ul class="mb-0 ms-4">
+                                <li>没有超时归还</li>
+                                <li>没有不诚信的异地还车行为</li>
+                            </ul>
+                        </div>
+                        <div class="text-center">
+                            <h3 class="text-primary mb-0">{{ vip_upgrade_info.consecutive_count }}/10</h3>
+                            <small class="text-muted">连续诚信订单</small>
+                            <p class="mb-0 mt-2">
+                                <small class="text-muted">还需 {{ vip_upgrade_info.remaining }} 个订单</small>
+                            </p>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
     <!-- 租赁统计 -->
     <div class="col-12 mb-4">
         <div class="card shadow-sm">

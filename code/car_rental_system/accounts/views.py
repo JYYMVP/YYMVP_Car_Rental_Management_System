@@ -21,7 +21,9 @@ from .forms import (
 from .models import UserProfile, Favorite, Review, Payment, Notification
 from vehicles.models import Vehicle
 from rentals.models import Rental
+from rentals.forms import ReturnForm
 from customers.models import Customer
+from .store_locations import STORE_LOCATIONS, get_all_districts
 
 
 # ========== 用户认证相关视图 ==========
@@ -171,12 +173,23 @@ def profile_view(request):
         user=user, is_read=False
     ).count()
     
+    # 获取VIP升级信息（如果不是VIP）
+    vip_upgrade_info = None
+    if customer and customer.member_level != 'VIP':
+        is_eligible, consecutive_count = customer.check_vip_upgrade_eligibility()
+        vip_upgrade_info = {
+            'is_eligible': is_eligible,
+            'consecutive_count': consecutive_count,
+            'remaining': max(0, 10 - consecutive_count)
+        }
+    
     context = {
         'user': user,
         'customer': customer,
         'rentals': user_rentals,
         'rental_stats': rental_stats,
         'unread_notifications': unread_notifications,
+        'vip_upgrade_info': vip_upgrade_info,
     }
     
     return render(request, 'accounts/profile.html', context)
@@ -656,6 +669,21 @@ def vehicle_detail_view(request, pk):
         average_rating=Avg('rating')
     )
     
+    # 获取各评分的数量（用于评分分布）
+    rating_distribution = []
+    if review_stats['total'] > 0:
+        for rating_value in range(5, 0, -1):  # 5星到1星
+            count = Review.objects.filter(vehicle=vehicle, rating=rating_value).count()
+            if review_stats['total'] > 0:
+                percentage = (count / review_stats['total']) * 100
+            else:
+                percentage = 0
+            rating_distribution.append({
+                'rating': rating_value,
+                'count': count,
+                'percentage': percentage
+            })
+    
     # 获取最近评价
     recent_reviews = Review.objects.filter(vehicle=vehicle).select_related(
         'user'
@@ -675,6 +703,7 @@ def vehicle_detail_view(request, pk):
         'customer': customer,
         'is_favorited': is_favorited,
         'review_stats': review_stats,
+        'rating_distribution': rating_distribution,
         'recent_reviews': recent_reviews,
     }
     
@@ -779,6 +808,9 @@ def vehicle_compare_result_view(request):
 @login_required
 def my_orders_view(request):
     """我的订单视图"""
+    # 自动更新订单状态
+    Rental.auto_update_status()
+    
     # 获取用户的客户信息
     customer = get_customer_for_user(request.user)
     
@@ -822,6 +854,9 @@ def my_orders_view(request):
 @login_required
 def order_detail_view(request, pk):
     """订单详情视图"""
+    # 自动更新订单状态
+    Rental.auto_update_status()
+    
     rental = get_object_or_404(Rental, pk=pk)
     
     # 验证订单属于当前用户
@@ -838,7 +873,10 @@ def order_detail_view(request, pk):
     except Review.DoesNotExist:
         pass
     
-    # 获取支付记录
+    # 刷新订单财务信息（确保数据是最新的）
+    rental.refresh_financials()
+    
+    # 获取支付记录（包括退款记录）
     payments = Payment.objects.filter(rental=rental).order_by('-created_at')
     payment_summary = get_payment_summary(rental, payments)
     can_pay = rental.status in ['PENDING', 'ONGOING'] and payment_summary['remaining_amount'] > Decimal('0.00')
@@ -951,6 +989,8 @@ def order_create_view(request):
     context = {
         'form': form,
         'customer': customer,
+        'store_locations': STORE_LOCATIONS,
+        'districts': get_all_districts(),
     }
     
     return render(request, 'accounts/order_create.html', context)
@@ -976,9 +1016,36 @@ def order_cancel_view(request, pk):
     cancel_reason = request.POST.get('cancel_reason', '用户取消')
     
     with transaction.atomic():
+        # 获取已支付金额（扣除已退款金额）
+        payment_summary = get_payment_summary(rental)
+        paid_amount = payment_summary['paid_amount']
+        refunded_amount = payment_summary['refunded_amount']
+        net_paid = paid_amount - refunded_amount
+        
         rental.status = 'CANCELLED'
         rental.notes = f"{rental.notes or ''}\n取消原因：{cancel_reason}".strip()
         rental.save()
+        
+        # 如果有已支付金额，创建退款记录
+        if net_paid > Decimal('0.00'):
+            Payment.objects.create(
+                rental=rental,
+                user=request.user,
+                amount=net_paid,
+                payment_method='BANK',  # 退款方式默认银行卡
+                transaction_type='REFUND',
+                status='REFUNDED',
+                description=f'订单取消，退还已支付金额 ¥{net_paid:.2f}',
+                paid_at=timezone.now(),
+                transaction_id=f'REF{int(timezone.now().timestamp())}'
+            )
+            
+            # 更新订单财务信息
+            rental.refresh_financials()
+            
+            messages.success(request, f'订单已成功取消，已退还 ¥{net_paid:.2f}。')
+        else:
+            messages.success(request, '订单已成功取消。')
         
         # 更新车辆状态
         if rental.vehicle.status == 'RENTED':
@@ -990,11 +1057,9 @@ def order_cancel_view(request, pk):
             user=request.user,
             notification_type='ORDER_CANCELLED',
             title='订单已取消',
-            content=f'您的订单 #{rental.id} 已取消。',
+            content=f'您的订单 #{rental.id} 已取消。' + (f'退款金额：¥{net_paid:.2f}' if net_paid > Decimal('0.00') else ''),
             related_rental=rental
         )
-        
-        messages.success(request, '订单已成功取消。')
     
     return redirect('accounts:order_detail', pk=pk)
 
@@ -1052,6 +1117,144 @@ def order_review_view(request, pk):
     }
     
     return render(request, 'accounts/order_review.html', context)
+
+
+@login_required
+@require_http_methods(["GET", "POST"])
+def order_return_view(request, pk):
+    """用户还车视图"""
+    # 自动更新订单状态（确保状态是最新的）
+    Rental.auto_update_status()
+    
+    rental = get_object_or_404(Rental, pk=pk)
+    
+    # 验证订单属于当前用户
+    customer = get_customer_for_user(request.user)
+    
+    if rental.customer != customer:
+        messages.error(request, '您没有权限还车此订单。')
+        return redirect('accounts:my_orders')
+    
+    # 检查订单状态，只有进行中或已超时未归还的订单才能还车
+    if rental.status not in ['ONGOING', 'OVERDUE']:
+        messages.error(request, f'只有进行中或已超时未归还的订单才能办理还车，当前订单状态：{rental.get_status_display()}')
+        return redirect('accounts:order_detail', pk=rental.pk)
+    
+    if request.method == 'POST':
+        form = ReturnForm(request.POST)
+        if form.is_valid():
+            actual_return_date = form.cleaned_data['actual_return_date']
+            actual_return_location = form.cleaned_data.get('actual_return_location', '').strip() or None
+            
+            # 如果未填写还车门店，使用取车门店
+            if not actual_return_location:
+                actual_return_location = rental.pickup_location
+            
+            with transaction.atomic():
+                # 更新还车信息
+                rental.actual_return_date = actual_return_date
+                rental.actual_return_location = actual_return_location
+                
+                # 判断是否实际异地还车（实际还车门店与取车门店不同）
+                actual_is_cross_location = (
+                    actual_return_location and 
+                    actual_return_location.strip() != rental.pickup_location.strip()
+                )
+                
+                # 计算异地还车费用
+                cross_location_fee_to_add = Decimal('0.00')
+                if actual_is_cross_location:
+                    # 如果租车时未勾选异地还车，但实际异地还车了，需要增加费用
+                    if not rental.is_cross_location_return:
+                        # 默认异地还车费用为日租金的50%（可根据实际业务调整）
+                        cross_location_fee_to_add = rental.vehicle.daily_rate * Decimal('0.5')
+                        rental.cross_location_fee = cross_location_fee_to_add
+                        rental.is_cross_location_return = True
+                        rental.return_location = actual_return_location
+                
+                # 计算超时还车费用
+                overdue_fee = Decimal('0.00')
+                if actual_return_date > rental.end_date:
+                    # 超期租赁，计算超时费用
+                    extra_days = (actual_return_date - rental.end_date).days
+                    # 超时费用按日租金计算（可根据实际业务调整）
+                    overdue_fee = rental.vehicle.daily_rate * Decimal(str(extra_days))
+                    rental.overdue_fee = overdue_fee
+                
+                # 更新订单状态为已完成
+                rental.status = 'COMPLETED'
+                rental.save()
+                
+                # 检查该车辆是否还有其他进行中的订单
+                other_ongoing_rentals = Rental.objects.filter(
+                    vehicle=rental.vehicle,
+                    status='ONGOING'
+                ).exclude(pk=rental.pk).count()
+                
+                # 如果没有其他进行中的订单，更新车辆状态为可用
+                if other_ongoing_rentals == 0:
+                    rental.vehicle.status = 'AVAILABLE'
+                    rental.vehicle.save()
+                
+                # 退还押金
+                deposit_refunded, deposit_refund_amount = rental.refund_deposit(user=request.user)
+                
+                # 刷新财务信息
+                rental.refresh_financials()
+                
+                # 检查是否符合VIP升级条件，如果符合则自动升级
+                vip_upgraded = False
+                if rental.customer and rental.customer.member_level != 'VIP':
+                    is_eligible, consecutive_count = rental.customer.check_vip_upgrade_eligibility()
+                    if is_eligible:
+                        vip_upgraded = rental.customer.upgrade_to_vip()
+                
+                # 创建通知
+                notification_content = f'您的订单 #{rental.id} 已成功归还，订单总额：¥{rental.calculate_order_total():.2f}。'
+                if deposit_refunded:
+                    notification_content += f' 押金 ¥{deposit_refund_amount:.2f} 已退还。'
+                if vip_upgraded:
+                    notification_content += ' 恭喜您！由于连续10个订单表现优异，您已自动升级为VIP会员，享受免押金优惠！'
+                
+                Notification.objects.create(
+                    user=request.user,
+                    notification_type='ORDER_COMPLETED',
+                    title='车辆归还成功',
+                    content=notification_content,
+                    related_rental=rental
+                )
+                
+                # 构建成功消息
+                fee_details = []
+                if cross_location_fee_to_add > 0:
+                    fee_details.append(f'异地还车费用：¥{cross_location_fee_to_add:.2f}')
+                if overdue_fee > 0:
+                    fee_details.append(f'超时还车费用：¥{overdue_fee:.2f}')
+                if deposit_refunded:
+                    fee_details.append(f'押金退还：¥{deposit_refund_amount:.2f}')
+                
+                total_fee_message = f'车辆归还成功！订单总额：¥{rental.calculate_order_total():.2f}'
+                if fee_details:
+                    total_fee_message += f'（含：{", ".join(fee_details)}）'
+                if vip_upgraded:
+                    total_fee_message += ' 恭喜您！由于连续10个订单表现优异，您已自动升级为VIP会员，享受免押金优惠！'
+                
+                messages.success(request, total_fee_message)
+                return redirect('accounts:order_detail', pk=rental.pk)
+    else:
+        # 设置默认还车门店为取车门店
+        form = ReturnForm(initial={
+            'actual_return_location': rental.pickup_location
+        })
+    
+    context = {
+        'form': form,
+        'rental': rental,
+        'store_locations': STORE_LOCATIONS,
+        'districts': get_all_districts(),
+    }
+    
+    return render(request, 'accounts/order_return.html', context)
 
 
 # ========== 支付相关视图 ==========
@@ -1172,6 +1375,10 @@ def consumption_report_view(request):
     
     consumption_items = []
     for rental in rentals:
+        # 刷新订单财务信息（确保数据是最新的）
+        rental.refresh_financials()
+        
+        # 获取所有支付记录（包括退款记录）
         rental_payments = rental.payments.all().order_by('-created_at')
         payment_summary = get_payment_summary(rental, rental_payments)
         consumption_items.append({

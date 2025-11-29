@@ -13,6 +13,7 @@ class Rental(models.Model):
     RENTAL_STATUS_CHOICES = [
         ('PENDING', '预订中'),
         ('ONGOING', '进行中'),
+        ('OVERDUE', '已超时未归还'),
         ('COMPLETED', '已完成'),
         ('CANCELLED', '已取消'),
     ]
@@ -48,6 +49,21 @@ class Rental(models.Model):
         blank=True,
         null=True,
         help_text='实际还车日期'
+    )
+    actual_return_location = models.CharField(
+        '实际还车门店',
+        max_length=200,
+        blank=True,
+        null=True,
+        help_text='实际还车门店'
+    )
+    overdue_fee = models.DecimalField(
+        '超时还车费用',
+        max_digits=10,
+        decimal_places=2,
+        default=Decimal('0.00'),
+        validators=[MinValueValidator(Decimal('0.00'))],
+        help_text='超时还车产生的赔偿费用'
     )
     total_amount = models.DecimalField(
         '总金额',
@@ -152,6 +168,65 @@ class Rental(models.Model):
             models.Index(fields=['vehicle', 'status']),
         ]
     
+    @classmethod
+    def auto_update_status(cls):
+        """
+        自动更新订单状态
+        - 预订中 → 进行中：当到达开始日期时
+        - 进行中 → 已超时未归还：当超过结束日期时
+        使用缓存避免频繁更新（每5分钟最多更新一次）
+        """
+        from django.core.cache import cache
+        from django.db import transaction
+        
+        cache_key = 'rental_status_auto_update'
+        last_update = cache.get(cache_key)
+        
+        # 如果5分钟内已更新过，跳过
+        if last_update:
+            return
+        
+        today = date.today()
+        updated_count = 0
+        
+        try:
+            with transaction.atomic():
+                # 1. 激活预订中订单（预订中 → 进行中）
+                pending_rentals = cls.objects.filter(
+                    status='PENDING',
+                    start_date__lte=today
+                ).select_related('vehicle')
+                
+                for rental in pending_rentals:
+                    rental.status = 'ONGOING'
+                    rental.save(update_fields=['status', 'updated_at'])
+                    updated_count += 1
+                    
+                    # 更新车辆状态为已租
+                    if rental.vehicle.status == 'AVAILABLE':
+                        rental.vehicle.status = 'RENTED'
+                        rental.vehicle.save(update_fields=['status'])
+                
+                # 2. 更新过期订单（进行中 → 已超时未归还）
+                overdue_rentals = cls.objects.filter(
+                    status='ONGOING',
+                    end_date__lt=today
+                )
+                
+                for rental in overdue_rentals:
+                    rental.status = 'OVERDUE'
+                    rental.save(update_fields=['status', 'updated_at'])
+                    updated_count += 1
+            
+            # 设置缓存，5分钟内不再更新
+            cache.set(cache_key, timezone.now(), 300)  # 5分钟缓存
+            
+        except Exception as e:
+            # 更新失败不影响正常流程
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f'自动更新订单状态失败: {e}')
+    
     def clean(self):
         """自定义验证方法"""
         super().clean()
@@ -175,9 +250,12 @@ class Rental(models.Model):
             rental_days = (self.end_date - self.start_date).days + 1
             self.total_amount = self.vehicle.daily_rate * rental_days
         
-        # 如果押金为0，设置默认押金（可以根据业务规则调整）
-        if self.deposit == Decimal('0.00') and self.vehicle:
-            # 默认押金为日租金的10倍（可根据实际业务调整）
+        # VIP用户不需要押金，普通用户需要押金
+        if self.customer and self.customer.member_level == 'VIP':
+            # VIP用户押金为0
+            self.deposit = Decimal('0.00')
+        elif self.deposit == Decimal('0.00') and self.vehicle:
+            # 普通用户默认押金为日租金的10倍（可根据实际业务调整）
             self.deposit = self.vehicle.daily_rate * Decimal('10')
         
         # 如果设置了异地还车，但还车地点为空，则使用取车地点
@@ -206,13 +284,14 @@ class Rental(models.Model):
         return 0
     
     def calculate_order_total(self):
-        """计算订单总额（基础租金 + 押金 + 异地费用）"""
+        """计算订单总额（基础租金 + 押金 + 异地费用 + 超时费用）"""
         base_amount = self.total_amount or Decimal('0.00')
         deposit_amount = self.deposit or Decimal('0.00')
         cross_location_fee = self.cross_location_fee or Decimal('0.00')
+        overdue_fee = self.overdue_fee or Decimal('0.00')
         if not self.is_cross_location_return:
             cross_location_fee = Decimal('0.00')
-        return base_amount + deposit_amount + cross_location_fee
+        return base_amount + deposit_amount + cross_location_fee + overdue_fee
     
     def refresh_financials(self, save=True):
         """根据支付记录刷新累计支付/退款信息"""
@@ -251,6 +330,67 @@ class Rental(models.Model):
                 'settled_at',
                 'updated_at'
             ])
+    
+    def refund_deposit(self, user=None):
+        """
+        退还押金
+        如果订单有押金且未退还，创建退款记录
+        返回：(是否已退款, 退款金额)
+        """
+        from accounts.models import Payment  # 避免循环导入
+        from django.db.models import Sum
+        
+        deposit_amount = self.deposit or Decimal('0.00')
+        if deposit_amount <= Decimal('0.00'):
+            return False, Decimal('0.00')
+        
+        # 检查已退还的押金总额
+        refunded_amount = Payment.objects.filter(
+            rental=self,
+            transaction_type='REFUND',
+            status='REFUNDED'
+        ).aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
+        
+        # 计算可退还金额（押金减去已退还金额）
+        refundable = deposit_amount - refunded_amount
+        
+        if refundable <= Decimal('0.00'):
+            return False, Decimal('0.00')
+        
+        # 获取退款用户
+        refund_user = user
+        if not refund_user:
+            # 优先使用支付记录中的用户
+            payment_user = Payment.objects.filter(
+                rental=self,
+                transaction_type='CHARGE',
+                status='PAID'
+            ).order_by('created_at').first()
+            refund_user = payment_user.user if payment_user else None
+            # 如果没有支付记录，使用客户关联的用户
+            if not refund_user and self.customer and self.customer.user:
+                refund_user = self.customer.user
+        
+        if not refund_user:
+            return False, Decimal('0.00')
+        
+        # 创建退款记录
+        Payment.objects.create(
+            rental=self,
+            user=refund_user,
+            amount=refundable,
+            payment_method='BANK',
+            transaction_type='REFUND',
+            status='REFUNDED',
+            description='订单完成，押金自动退还',
+            paid_at=timezone.now(),
+            transaction_id=f'REF{int(timezone.now().timestamp())}'
+        )
+        
+        # 刷新财务信息
+        self.refresh_financials()
+        
+        return True, refundable
     
     @property
     def outstanding_amount(self):

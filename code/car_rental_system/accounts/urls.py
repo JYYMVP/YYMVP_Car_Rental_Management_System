@@ -31,6 +31,7 @@ urlpatterns = [
     path('order/create/', views.order_create_view, name='order_create'),
     path('order/<int:pk>/cancel/', views.order_cancel_view, name='order_cancel'),
     path('order/<int:pk>/review/', views.order_review_view, name='order_review'),
+    path('order/<int:pk>/return/', views.order_return_view, name='order_return'),
     
     # 支付
     path('payment/<int:pk>/', views.payment_view, name='payment'),

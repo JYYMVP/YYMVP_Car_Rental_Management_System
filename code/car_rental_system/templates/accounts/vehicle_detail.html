@@ -55,6 +55,21 @@
                                 <p class="text-muted mb-0">日租金</p>
                             </div>
                         </div>
+                        {% if review_stats.total > 0 %}
+                        <div class="text-center mt-3">
+                            <div class="border rounded p-3 bg-light">
+                                <div class="h4 mb-1 text-warning">
+                                    {% if review_stats.average_rating %}
+                                        {{ review_stats.average_rating|floatformat:1 }}
+                                    {% else %}
+                                        0.0
+                                    {% endif %}
+                                    <i class="fas fa-star text-warning"></i>
+                                </div>
+                                <div class="text-muted small">({{ review_stats.total|default:0 }}条评价)</div>
+                            </div>
+                        </div>
+                        {% endif %}
                     </div>
                 </div>
                 
@@ -69,6 +84,103 @@
                         <span class="badge bg-secondary">维修中</span> - 该车辆正在维修
                     {% endif %}
                 </div>
+            </div>
+        </div>
+
+        <!-- 车辆评价 -->
+        <div class="card shadow mb-4">
+            <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="fas fa-star me-2"></i>用户评价
+                </h5>
+                {% if review_stats.total > 0 %}
+                <div class="d-flex align-items-center gap-3">
+                    <div class="text-center">
+                        <div class="h4 mb-0 text-warning">
+                            {% if review_stats.average_rating %}
+                                {{ review_stats.average_rating|floatformat:1 }}
+                            {% else %}
+                                0.0
+                            {% endif %}
+                            <i class="fas fa-star text-warning"></i>
+                        </div>
+                        <small class="text-muted">平均评分</small>
+                    </div>
+                    <div class="text-center">
+                        <div class="h4 mb-0 text-primary">{{ review_stats.total|default:0 }}</div>
+                        <small class="text-muted">评价总数</small>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+            <div class="card-body">
+                {% if review_stats.total > 0 %}
+                    <!-- 评分分布 -->
+                    {% if rating_distribution %}
+                    <div class="mb-4">
+                        <h6 class="mb-3">
+                            <i class="fas fa-chart-bar me-2"></i>评分分布
+                        </h6>
+                        {% for dist in rating_distribution %}
+                        <div class="d-flex align-items-center mb-2">
+                            <div class="flex-shrink-0" style="width: 50px;">
+                                <span class="text-muted">{{ dist.rating }}星</span>
+                            </div>
+                            <div class="flex-grow-1 mx-3">
+                                <div class="progress" style="height: 20px;">
+                                    {% if dist.percentage > 0 %}
+                                    <div class="progress-bar bg-warning" role="progressbar" 
+                                         style="width: {{ dist.percentage }}%">
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="flex-shrink-0" style="width: 40px; text-align: right;">
+                                <span class="text-muted small">{{ dist.count }}</span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+
+                    <!-- 最近评价列表 -->
+                    <div>
+                        <h6 class="mb-3">
+                            <i class="fas fa-comments me-2"></i>最近评价
+                        </h6>
+                        {% for review in recent_reviews %}
+                        <div class="border rounded p-3 mb-3">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <div>
+                                    <strong class="text-primary">{{ review.user.username }}</strong>
+                                    <span class="text-muted small ms-2">{{ review.created_at|date:"Y-m-d H:i" }}</span>
+                                </div>
+                                <div>
+                                    {% for i in "12345"|make_list %}
+                                        {% if forloop.counter <= review.rating %}
+                                            <i class="fas fa-star text-warning"></i>
+                                        {% else %}
+                                            <i class="far fa-star text-warning"></i>
+                                        {% endif %}
+                                    {% endfor %}
+                                    <span class="text-muted small ms-1">{{ review.rating }}星</span>
+                                </div>
+                            </div>
+                            {% if review.comment %}
+                                <p class="mb-0 text-muted">{{ review.comment }}</p>
+                            {% else %}
+                                <p class="mb-0 text-muted"><em>用户未填写评价内容</em></p>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-star fa-3x text-muted mb-3"></i>
+                        <p class="text-muted mb-0">暂无用户评价</p>
+                        <small class="text-muted">成为第一个评价此车辆的用户吧！</small>
+                    </div>
+                {% endif %}
             </div>
         </div>
     </div>
@@ -120,4 +232,3 @@
     </div>
 </div>
 {% endblock %}
-

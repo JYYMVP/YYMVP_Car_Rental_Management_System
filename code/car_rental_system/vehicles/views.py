@@ -141,7 +141,8 @@ def vehicle_detail(request, pk):
     
     # 获取相关租赁订单（如果有的话）- 使用select_related优化
     from rentals.models import Rental
-    from django.db.models import Count, Q
+    from accounts.models import Review
+    from django.db.models import Count, Q, Avg
     
     rental_orders = Rental.objects.filter(vehicle=vehicle).select_related('customer').order_by('-created_at')[:10]
     
@@ -152,6 +153,32 @@ def vehicle_detail(request, pk):
         completed=Count('id', filter=Q(status='COMPLETED')),
     )
     
+    # 获取车辆评价统计
+    review_stats = Review.objects.filter(vehicle=vehicle).aggregate(
+        total=Count('id'),
+        average_rating=Avg('rating')
+    )
+    
+    # 获取各评分的数量（用于评分分布）
+    rating_distribution = []
+    if review_stats['total'] and review_stats['total'] > 0:
+        for rating_value in range(5, 0, -1):  # 5星到1星
+            count = Review.objects.filter(vehicle=vehicle, rating=rating_value).count()
+            if review_stats['total'] > 0:
+                percentage = (count / review_stats['total']) * 100
+            else:
+                percentage = 0
+            rating_distribution.append({
+                'rating': rating_value,
+                'count': count,
+                'percentage': percentage
+            })
+    
+    # 获取最近评价
+    recent_reviews = Review.objects.filter(vehicle=vehicle).select_related(
+        'user'
+    ).order_by('-created_at')[:5]
+    
     context = {
         'vehicle': vehicle,
         'rental_orders': rental_orders,
@@ -160,6 +187,9 @@ def vehicle_detail(request, pk):
             'active': rental_stats['active'] or 0,
             'completed': rental_stats['completed'] or 0,
         },
+        'review_stats': review_stats,
+        'rating_distribution': rating_distribution,
+        'recent_reviews': recent_reviews,
     }
     
     return render(request, 'vehicles/vehicle_detail.html', context)
